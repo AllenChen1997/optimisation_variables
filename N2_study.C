@@ -18,19 +18,19 @@
 
 #define Maxpt 2000
 #define NN2 20
-#define minN2 0
-#define maxN2 0.5
+#define MinN2 0
+#define MaxN2 0.5
 #define Nrho 20
-#define minrho -5
-#define maxrho 0
+#define Minrho -5
+#define Maxrho 0
 using namespace std;
 
 class Data{
 private:
-	Double_t n2,pt,rho;
+	Double_t n2,rho,pt;
 public:
 	Data(){}
-	Data(Double_t& a,Double_t& b,Double_t& c ) : n2(a),pt(b),rho(c){}
+	Data(Double_t& a,Double_t& b,Double_t& c ) : n2(a),rho(b),pt(c){}
 	Double_t Getn2() const { return n2; }
 	Double_t Getpt() const {return pt;}
 	Double_t Getrho() const {return rho;}
@@ -44,7 +44,8 @@ public:
 };
 
 void N2_study(){
-	TH3D* h1 = new TH3D("h1","N2-rho-jetPt",NN2,minN2,maxN2, Nrho,minrho,maxrho, 3,0, Maxpt); // n2-rho-pt
+	//setup histograms for N2b1/N2b2 and N2DDT
+	TH3D* h1 = new TH3D("h1","N2-rho-jetPt",NN2,MinN2,MaxN2, Nrho,Minrho,Maxrho, 3,0, Maxpt); // n2-rho-pt
 		TAxis* xaxis = h1->GetXaxis();
 		TAxis* yaxis = h1->GetYaxis();
 		TAxis* zaxis = h1->GetZaxis();
@@ -54,7 +55,7 @@ void N2_study(){
 	TH3D* h2 = (TH3D*) h1->Clone("h2");
 		xaxis = h2->GetXaxis();
 		xaxis->SetTitle("N^{2.0}_{2}");
-	TH3D* h3 = new TH3D("h3","N2ddt-rho-jetpt",2*NN2,-maxN2,maxN2,Nrho,minrho,maxrho,3,0,Maxpt);
+	TH3D* h3 = new TH3D("h3","N2ddt-rho-jetpt",NN2,MinN2,MaxN2,Nrho,Minrho,Maxrho,3,0,Maxpt);
 		xaxis = h3->GetXaxis();
 		xaxis->SetTitle("N2DDT(n2b1)");
 		yaxis = h3->GetYaxis();
@@ -65,12 +66,12 @@ void N2_study(){
 		xaxis = h4->GetXaxis();
 		xaxis->SetTitle("N2DDT(n2b2)");
 		
-	vector<Data> v1[Nrho],v2[Nrho];
-	ifstream infile("QCD_list.txt"); // used to input file. in each line: xxx.root name_for_plot
+	vector<Data> v1[Nrho],v2[Nrho]; // used to store & sort the data 
+	ifstream infile("QCD_list.txt"); // used to load input file list. in each line: xxx.root name_for_plot
 	string line,s1,s2;
 	stringstream ss;
-	int i=0,overN=0,lowerN=0;
-	double d = (double) (maxrho - minrho) / (double)Nrho;
+	int i=0,overN=0,lowerN=0; // lowerN is the number of which pt lower than 0, overN is the number of which pt > Maxpt
+	double d = (double) (Maxrho - Minrho) / (double)Nrho;  // this is the width of the rho bin
 	double ixs;
 	while(getline(infile,line)){
       cout << line << endl;
@@ -87,9 +88,8 @@ void N2_study(){
 		if (N == 0) continue;
 		i++;
 		while (myRead.Next()){
-			int region_rho = floor((double)(*rho - minrho) / d );
-//cout << region_rho << " ";
-			if (region_rho < 0) continue;
+			if (*rho > Maxrho || *rho < Minrho) continue;
+			int region_rho = floor((double)(*rho - Minrho) / d ); // use this to decide the data in which rho region 
 			v1[region_rho].push_back(Data(*n2b1,*rho,*pt));
 			v2[region_rho].push_back(Data(*n2b2,*rho,*pt));
 			h1->Fill(*n2b1,*rho,*pt);
@@ -110,8 +110,8 @@ void N2_study(){
 		Double_t in2b1 = v1[i][rho5per].Getn2();
 		Double_t in2b2 = v2[i][rho5per].Getn2();
 		cout << "i= " << i << " | " << in2b1 << " " << in2b2 << endl;
-		dt1->SetPoint(n,minrho+(i+0.5)*d,in2b1);
-		dt2->SetPoint(n,minrho+(i+0.5)*d,in2b2);
+		dt1->SetPoint(n,Minrho+(i+0.5)*d,in2b1);
+		dt2->SetPoint(n,Minrho+(i+0.5)*d,in2b2);
 		n++;
 		for (auto x : v1[i])	h3->Fill(x.Getn2()-in2b1, x.Getrho(), x.Getpt() );
 		for (auto x : v2[i])	h4->Fill(x.Getn2()-in2b2, x.Getrho(), x.Getpt() );
