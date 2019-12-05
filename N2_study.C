@@ -20,9 +20,9 @@
 #define NN2 20
 #define MinN2 0
 #define MaxN2 0.5
-#define Nrho 20
+#define Nrho 16
 #define Minrho -5
-#define Maxrho 0
+#define Maxrho -1
 // pt bin region [200, 350, 480,1000]
 #define pt_r1 200
 #define pt_r2 350
@@ -74,7 +74,7 @@ void Draw_and_write( vector<vector<Data>>& v, string name){
 	TH3D* h2 = (TH3D*) h1->Clone(Form("h_%s_n2b2",name.c_str()));
 		xaxis = h2->GetXaxis();
 		xaxis->SetTitle("N^{2.0}_{2}");
-	TH3D* h3 = new TH3D(Form("h_%s_N2b1DDT",name.c_str()),"N2ddt-rho-jetpt",NN2,MinN2,MaxN2,Nrho,Minrho,Maxrho,3,0,Maxpt);
+	TH3D* h3 = new TH3D(Form("h_%s_N2b1DDT",name.c_str()),"N2ddt-rho-jetpt",2*NN2,-MaxN2,MaxN2,Nrho,Minrho,Maxrho,3,0,Maxpt);
 		xaxis = h3->GetXaxis();
 		xaxis->SetTitle("N2DDT(N^{1.0}_{2})");
 		yaxis = h3->GetYaxis();
@@ -107,21 +107,27 @@ void Draw_and_write( vector<vector<Data>>& v, string name){
 
 	// plot and output
 	auto c1 = new TCanvas(Form("c_%s_n2b1",name.c_str()),Form("c_%s_n2b1",name.c_str()) );
-	h1->Project3D("XY")->Draw("VIOLIN");
+	h1->Project3D("XY")->Draw("VIOLIN(03001000)");
 	dt1->Draw("* SAME");
 	c1->Write();
+	c1->SaveAs(Form("c_%s_n2b1.png",name.c_str()) );
 	auto c2 = new TCanvas(Form("c_%s_n2b2",name.c_str()),Form("c_%s_n2b2",name.c_str()) );
-	h2->Project3D("XY")->Draw("VIOLIN");
+	h2->Project3D("XY")->Draw("VIOLIN(03001000)");
 	dt2->Draw("* SAME");
 	c2->Write();
+	c2->SaveAs(Form("c_%s_n2b2.png",name.c_str()) );
 	auto c3 = new TCanvas(Form("c_%s_n2b1DDT",name.c_str()),Form("c_%s_n2b1DDT",name.c_str()) );
-	h3->Project3D("XY")->Draw("VIOLIN");
+	h3->Project3D("XY")->Draw("VIOLIN(03001000)");
 	dt0->Draw("* SAME");
 	c3->Write();
+	c3->SaveAs(Form("c_%s_n2b1DDT.png",name.c_str()) );
 	auto c4 = new TCanvas(Form("c_%s_n2b2DDT",name.c_str()),Form("c_%s_n2b2DDT",name.c_str()) );
-	h4->Project3D("XY")->Draw("VIOLIN");
+	h4->Project3D("XY")->Draw("VIOLINX(03001000)");
 	dt0->Draw("* SAME");
 	c4->Write();
+	c4->SaveAs(Form("c_%s_n2b2DDT.png",name.c_str()) );
+	h1->Write();
+	h2->Write();
 }
 
 void N2_study(){
@@ -172,7 +178,3 @@ void N2_study(){
 	cout << "lower: " << lowerN << "| over: " << overN << endl;
 	fout->Close();
 }
-		
-		
-		
-		
