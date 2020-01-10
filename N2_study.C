@@ -1,7 +1,7 @@
 ///////////////////////////
 /*
 	this is used to study N2 value in jetpt/ rho
-
+	in the end, output the root file with X(N% selection eff. of QCD)
 */
 //////////////////////////
 
@@ -29,11 +29,10 @@
 #define pt_r3 480
 #define pt_r4 1000
 #define Npt 3
-#define if_diffpt 1
 using namespace std;
 
 double d = (double) (Maxrho - Minrho) / (double)Nrho;  // this is the width of the rho bin
-
+bool test = false;
 class Data{
 private:
 	Double_t n2b1,n2b2,rho,pt;
@@ -56,9 +55,9 @@ public:
 		
 };
 
-void Draw_and_write( vector<vector<Data>>& v, string name, vector<Double_t>& vn2b1, vector<Double_t>& vn2b2 ){
+void Draw_and_write( vector<vector<Data>>& v, string name, vector<Double_t>& vn2b1, vector<Double_t>& vn2b2, double Npercent ){
 // this function will write to the most current opened file
-// find the 5% N2 value by sort the vector
+// find the 20% N2 value by sort the vector
 	Double_t rho5per;
 	TGraph* dt1 = new TGraph();
 	TGraph* dt2 = new TGraph();
@@ -91,7 +90,7 @@ void Draw_and_write( vector<vector<Data>>& v, string name, vector<Double_t>& vn2
 			vn2b2.push_back(-1);
 			continue;
 		}
-		rho5per = ceil(v[i].size()*0.05);
+		rho5per = floor(v[i].size()*Npercent);
 		sort(v[i].begin(),v[i].end(),less<Data>()); // use the "defined" less function in class to sort
 		Double_t in2b1 = v[i][rho5per].Getn2b1();
 		sort(v[i].begin(),v[i].end(),greater<Data>());
@@ -111,7 +110,7 @@ void Draw_and_write( vector<vector<Data>>& v, string name, vector<Double_t>& vn2
 		vn2b2.push_back(in2b2);
 	}
 
-	// plot and output
+	// plot 
 	auto c1 = new TCanvas(Form("c_%s_n2b1",name.c_str()),Form("c_%s_n2b1",name.c_str()) );
 	h1->Project3D("XY")->Draw("VIOLIN(03001000)");
 	dt1->Draw("* SAME");
@@ -119,7 +118,7 @@ void Draw_and_write( vector<vector<Data>>& v, string name, vector<Double_t>& vn2
 	c1->SaveAs(Form("c_%s_n2b1.png",name.c_str()) );
 	auto c2 = new TCanvas(Form("c_%s_n2b2",name.c_str()),Form("c_%s_n2b2",name.c_str()) );
 	h2->Project3D("XY")->Draw("VIOLIN(03001000)");
-	dt2->Draw("* SAME");
+	dt2->Draw(	"* SAME");
 	c2->Write();
 	c2->SaveAs(Form("c_%s_n2b2.png",name.c_str()) );
 	auto c3 = new TCanvas(Form("c_%s_n2b1DDT",name.c_str()),Form("c_%s_n2b1DDT",name.c_str()) );
@@ -132,14 +131,14 @@ void Draw_and_write( vector<vector<Data>>& v, string name, vector<Double_t>& vn2
 	dt0->Draw("* SAME");
 	c4->Write();
 	c4->SaveAs(Form("c_%s_n2b2DDT.png",name.c_str()) );
-	//h1->Write();
-	//h2->Write();
 }
 
 void N2_study(){
 	vector< vector<Data>> v1(Nrho); // used to store & sort the data in different rho region
 	vector< vector<Data>> v_pt1(Nrho),v_pt2(Nrho),v_pt3(Nrho); // used to store & sort the data in different pt region
-	vector< Double_t > v1_n2b1, v1_n2b2;
+	vector< Double_t > n2b1_v20, n2b2_v20, n2b1_v26, n2b2_v26, n2b1_h20, n2b2_h20, n2b1_h26, n2b2_h26;
+	TH3D* h_n2b1 = new TH3D("h_n2b1","h_n2b1",NN2,MinN2,MaxN2, Nrho,Minrho,Maxrho, 3,0, Maxpt); // for short test
+	TH3D* h_n2b2 = (TH3D*) h_n2b1->Clone("h_n2b2");
 	// input file data
 	ifstream infile("QCD_list.txt"); // used to load input file list. in each line: xxx.root name_for_plot
 	string line,s1,s2;
@@ -165,6 +164,8 @@ void N2_study(){
 			if (*rho > Maxrho || *rho < Minrho) continue;
 			int region_rho = floor((double)(*rho - Minrho) / d ); // use this to decide the data in which rho region 
 			v1[region_rho].push_back(Data(*n2b1,*n2b2,*rho,*pt));
+			h_n2b1->Fill(*n2b1,*rho,*pt);
+			h_n2b2->Fill(*n2b2,*rho,*pt);
 			// cut in different pt region + different rho region
 			if (*pt >= pt_r1 && *pt < pt_r2 ) v_pt1[region_rho].push_back(Data(*n2b1,*n2b2,*rho,*pt));
 			else if (*pt >= pt_r2 && *pt < pt_r3) v_pt2[region_rho].push_back(Data(*n2b1,*n2b2,*rho,*pt));
@@ -178,12 +179,64 @@ void N2_study(){
 	// prepare to output
 	TFile* fout = new TFile("TH3_output.root","NEW");
 	TTree outTree("tree","out branches");
-	outTree.Branch("noPt_n2b1", &v1_n2b1);
-	outTree.Branch("noPt_n2b2", &v1_n2b2);
-	Draw_and_write(v1,"noPt",v1_n2b1,v1_n2b2);
-	//Draw_and_write(v_pt1,"pt_200to350",outTree);
-	//Draw_and_write(v_pt2,"pt_350to480",outTree);
-	//Draw_and_write(v_pt3,"pt_480to1000",outTree);
+	outTree.Branch("n2b1_v20", &n2b1_v20);
+	outTree.Branch("n2b2_v20", &n2b2_v20);
+	outTree.Branch("n2b1_v20", &n2b1_v26);
+	outTree.Branch("n2b2_v26", &n2b2_v26);
+	outTree.Branch("n2b1_h20", &n2b1_h20);
+	outTree.Branch("n2b2_h20", &n2b2_h20);
+	outTree.Branch("n2b1_h26", &n2b1_h26);
+	outTree.Branch("n2b2_h26", &n2b2_h26);
+	Draw_and_write(v1,"20",n2b1_v20,n2b2_v20,0.2);
+	Draw_and_write(v1,"26",n2b1_v26,n2b2_v26,0.26);
+	
+	// the way to use GetQuantiles
+	Double_t *q = new Double_t[2]; // for n2b1
+	Double_t *p = new Double_t[2];
+	q[0] = 0.0; q[1] = 0.0;
+	p[0] = 0.2; p[1] = 0.26;
+	vector<int> v_contents;
+	for (int i = 0; i<Nrho; i++){
+		TH1D* h_project = (TH1D*) h_n2b1->ProjectionX("",i+1,i+1,0,-1);
+		v_contents.push_back((int)h_project->GetEntries());
+		if (h_project->GetEntries() == 0 ) {
+			n2b1_h20.push_back(-1);
+			n2b1_h26.push_back(-1);
+			n2b2_h20.push_back(-1);
+			n2b2_h26.push_back(-1);		
+			continue;
+		}
+		h_project->GetQuantiles(2,q,p);
+		n2b1_h20.push_back(q[0]);
+		n2b1_h26.push_back(q[1]);
+		
+		TH1D* h_project2 = (TH1D*) h_n2b2->ProjectionX("",i+1,i+1,0,-1);
+		h_project2->GetQuantiles(2,q,p);
+		n2b2_h20.push_back(q[0]);
+		n2b2_h26.push_back(q[1]);		
+		q[0] = 0.0; q[1] = 0.0; 
+	}
+	// the way to use GetQuantiles end
+	
+	// output test 
+	if (test){
+		cout << "comparing vector sorting and getquantiles(n2b1) " << endl;
+		cout << "  getQuantiles  " << endl;
+		for (auto x : n2b1_h20 ) cout << setw(9) << x <<  " ";
+		cout << endl;
+		cout << " vector sorting " << endl;
+		for (auto x : n2b1_v20 ) cout << setw(9) << x << " ";
+		cout << endl;
+
+		cout << "comparing vector and histogram(contents) " << endl;
+		cout << "  vector   " << endl;
+		for (auto x : v1 ) cout << setw(3) << x.size() <<  " ";
+		cout << endl;
+		cout << " histogram " << endl;
+		for (auto x : v_contents) cout << setw(3) << x << " ";
+		cout << endl;
+	}	//
+	
 	outTree.Fill();
 	fout->Write();
 	cout << "lower: " << lowerN << "| over: " << overN << endl;
