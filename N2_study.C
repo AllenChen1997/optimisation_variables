@@ -17,8 +17,8 @@
 #include <TAxis.h>
 
 #define Maxpt 2000
-#define NN2 20
-#define MinN2 0
+#define NN2 28
+#define MinN2 -0.2
 #define MaxN2 0.5
 #define Nrho 16
 #define Minrho -5
@@ -55,6 +55,16 @@ public:
 		
 };
 
+void sort_Nper( vector<Data>& v, vector<Double_t>& vout1){
+	// n = 50,25,10,5
+	double percent[4] = {0.05,0.2,0.26,0.5};
+	sort(v.begin(),v.end(),less<Data>());
+	for (int i=0;i<4;i++){
+		double num = v[percent[i]*v.size()].Getn2b1();
+		vout1.push_back(num);
+	}
+}
+
 void Draw_and_write( vector<vector<Data>>& v, string name, vector<Double_t>& vn2b1, vector<Double_t>& vn2b2, double Npercent ){
 // this function will write to the most current opened file
 // find the 20% N2 value by sort the vector
@@ -73,7 +83,7 @@ void Draw_and_write( vector<vector<Data>>& v, string name, vector<Double_t>& vn2
 	TH3D* h2 = (TH3D*) h1->Clone(Form("h_%s_n2b2",name.c_str()));
 		xaxis = h2->GetXaxis();
 		xaxis->SetTitle("N^{2.0}_{2}");
-	TH3D* h3 = new TH3D(Form("h_%s_N2b1DDT",name.c_str()),"N2ddt-rho-jetpt",2*NN2,-MaxN2,MaxN2,Nrho,Minrho,Maxrho,3,0,Maxpt);
+	TH3D* h3 = new TH3D(Form("h_%s_N2b1DDT",name.c_str()),"N2ddt-rho-jetpt",NN2,MinN2,MaxN2,Nrho,Minrho,Maxrho,3,0,Maxpt);
 		xaxis = h3->GetXaxis();
 		xaxis->SetTitle("N2DDT(N^{1.0}_{2})");
 		yaxis = h3->GetYaxis();
@@ -136,7 +146,9 @@ void Draw_and_write( vector<vector<Data>>& v, string name, vector<Double_t>& vn2
 void N2_study(){
 	vector< vector<Data>> v1(Nrho); // used to store & sort the data in different rho region
 	vector< vector<Data>> v_pt1(Nrho),v_pt2(Nrho),v_pt3(Nrho); // used to store & sort the data in different pt region
-	vector< Double_t > n2b1_v20, n2b2_v20, n2b1_v26, n2b2_v26, n2b1_h20, n2b2_h20, n2b1_h26, n2b2_h26;
+	vector< Data > v_total;
+	vector< Double_t > n2b1_v20, n2b1_v26, n2b1_v5, n2b1_v50, n2b1_cut;
+	vector< Double_t > n2b2_v20, n2b2_v26, n2b2_v5, n2b2_v50;
 	TH3D* h_n2b1 = new TH3D("h_n2b1","h_n2b1",NN2,MinN2,MaxN2, Nrho,Minrho,Maxrho, 3,0, Maxpt); // for short test
 	TH3D* h_n2b2 = (TH3D*) h_n2b1->Clone("h_n2b2");
 	// input file data
@@ -161,6 +173,7 @@ void N2_study(){
 		if (N == 0) continue;
 		i++;
 		while (myRead.Next()){  // loop in one root file
+			v_total.push_back(Data(*n2b1,*n2b2,*rho,*pt));
 			if (*rho > Maxrho || *rho < Minrho) continue;
 			int region_rho = floor((double)(*rho - Minrho) / d ); // use this to decide the data in which rho region 
 			v1[region_rho].push_back(Data(*n2b1,*n2b2,*rho,*pt));
@@ -181,48 +194,26 @@ void N2_study(){
 	TTree outTree("tree","out branches");
 	outTree.Branch("n2b1_v20", &n2b1_v20);
 	outTree.Branch("n2b2_v20", &n2b2_v20);
-	outTree.Branch("n2b1_v20", &n2b1_v26);
+	outTree.Branch("n2b1_v26", &n2b1_v26);
 	outTree.Branch("n2b2_v26", &n2b2_v26);
-	outTree.Branch("n2b1_h20", &n2b1_h20);
-	outTree.Branch("n2b2_h20", &n2b2_h20);
-	outTree.Branch("n2b1_h26", &n2b1_h26);
-	outTree.Branch("n2b2_h26", &n2b2_h26);
+	outTree.Branch("n2b1_v5", &n2b1_v5);
+	outTree.Branch("n2b2_v5", &n2b2_v5);
+	outTree.Branch("n2b1_v50", &n2b1_v50);
+	outTree.Branch("n2b2_v50", &n2b2_v50);
+	outTree.Branch("n2b1_cut", &n2b1_cut);
 	Draw_and_write(v1,"20",n2b1_v20,n2b2_v20,0.2);
 	Draw_and_write(v1,"26",n2b1_v26,n2b2_v26,0.26);
+	Draw_and_write(v1,"5",n2b1_v5,n2b2_v5,0.05);
+	Draw_and_write(v1,"50",n2b1_v50,n2b2_v50,0.5);
 	
-	// the way to use GetQuantiles
-	Double_t *q = new Double_t[2]; // for n2b1
-	Double_t *p = new Double_t[2];
-	q[0] = 0.0; q[1] = 0.0;
-	p[0] = 0.2; p[1] = 0.26;
-	vector<int> v_contents;
-	for (int i = 0; i<Nrho; i++){
-		TH1D* h_project = (TH1D*) h_n2b1->ProjectionX("",i+1,i+1,0,-1);
-		v_contents.push_back((int)h_project->GetEntries());
-		if (h_project->GetEntries() == 0 ) {
-			n2b1_h20.push_back(-1);
-			n2b1_h26.push_back(-1);
-			n2b2_h20.push_back(-1);
-			n2b2_h26.push_back(-1);		
-			continue;
-		}
-		h_project->GetQuantiles(2,q,p);
-		n2b1_h20.push_back(q[0]);
-		n2b1_h26.push_back(q[1]);
-		
-		TH1D* h_project2 = (TH1D*) h_n2b2->ProjectionX("",i+1,i+1,0,-1);
-		h_project2->GetQuantiles(2,q,p);
-		n2b2_h20.push_back(q[0]);
-		n2b2_h26.push_back(q[1]);		
-		q[0] = 0.0; q[1] = 0.0; 
-	}
-	// the way to use GetQuantiles end
+	// get different N2b1 cut
+	sort_Nper(v_total,n2b1_cut);
 	
 	// output test 
 	if (test){
 		cout << "comparing vector sorting and getquantiles(n2b1) " << endl;
 		cout << "  getQuantiles  " << endl;
-		for (auto x : n2b1_h20 ) cout << setw(9) << x <<  " ";
+		for (auto x : n2b1_v5 ) cout << setw(9) << x <<  " ";
 		cout << endl;
 		cout << " vector sorting " << endl;
 		for (auto x : n2b1_v20 ) cout << setw(9) << x << " ";
@@ -232,9 +223,7 @@ void N2_study(){
 		cout << "  vector   " << endl;
 		for (auto x : v1 ) cout << setw(3) << x.size() <<  " ";
 		cout << endl;
-		cout << " histogram " << endl;
-		for (auto x : v_contents) cout << setw(3) << x << " ";
-		cout << endl;
+
 	}	//
 	
 	outTree.Fill();
