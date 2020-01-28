@@ -2,7 +2,6 @@
 /*
 	Date 2019/11/13
 	owner Kung-Hsiang Chen
-	
 	check below -5 valus of rho entries 
 */
 ///////////////////////////////
@@ -19,28 +18,31 @@ using namespace std;
 void check_value(){
 	
 	ifstream infile("list_2.txt");
-	string line,s1,s2;
-	stringstream ss;
-	map<string,int> result; 
+	string line;
+	map<string,int> result,result2; 
 	while(getline(infile,line)){
-		ss << line;
-		ss >> s1 >> s2;
-		cout << s1 << endl;
-		ss.clear();
-		TFile* myfile = new TFile(s1.c_str(),"READ");
+		cout << line << endl;
+		TFile* myfile = new TFile(line.c_str(),"READ");
 		TTreeReader myRead("monoHbb_SR_boosted",myfile);
 		TTreeReaderValue< Double_t > rho(myRead,"FJetrho");
 		int N = myRead.GetEntries();
 		if ( N == 0 ) continue;
 		cout << "entries = " << N << endl;
 		int count=0;
+		int count2 = 0;
 		while (myRead.Next()){
-			if (*rho < -5) count++;
+			if (*rho < -6) count++;
+			if (*rho > -1) count2++;
 		}
-		result[s2]= count;
+		result[line]= count;
+		result2[line]= count2;
 	}
-	cout << "the amount of rho < -5" << endl;
+	cout << "the amount of rho < -6" << endl;
 	for ( auto x : result){
+		cout << x.first << " " << x.second << endl;
+	}
+	cout << "the amount of rho > -1" << endl;
+		for ( auto x : result2){
 		cout << x.first << " " << x.second << endl;
 	}
 }
