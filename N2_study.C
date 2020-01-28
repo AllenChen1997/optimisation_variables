@@ -20,8 +20,8 @@
 #define NN2 28
 #define MinN2 -0.2
 #define MaxN2 0.5
-#define Nrho 16
-#define Minrho -5
+#define Nrho 20
+#define Minrho -6
 #define Maxrho -1
 // pt bin region [200, 400, 600, 800]
 #define pt_r1 200
@@ -165,17 +165,13 @@ void N2_study(){
 	TH3D* h_n2b2 = (TH3D*) h_n2b1->Clone("h_n2b2");
 	// input file data
 	ifstream infile("QCD_list.txt"); // used to load input file list. in each line: xxx.root name_for_plot
-	string line,s1,s2;
-	stringstream ss;
+	string line;
 	int i=0,overN=0,lowerN=0; // lowerN is the number of which pt lower than 0, overN is the number of which pt > Maxpt
 	
 	double ixs;
 	while(getline(infile,line)){ // loop in the root file list
 	   cout << line << endl;
-	   ss << line;
-	   ss >> s1 >> s2 >> ixs;// s1=xxx.root, s2=name_for_plot
-	   ss.clear();
-		TFile* myfile = new TFile(s1.c_str(),"READ");
+		TFile* myfile = new TFile(line.c_str(),"READ");
 		TTreeReader myRead("monoHbb_SR_boosted",myfile);  
 		TTreeReaderValue< Double_t > n2b1(myRead,"FJetN2b1");
 		TTreeReaderValue< Double_t > n2b2(myRead,"FJetN2b2");

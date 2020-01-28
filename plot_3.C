@@ -4,7 +4,6 @@
 */
 ////////////////////////////////////////////////
 
-#include "load_to_hist.C"
 #include "N2_study.C"
 #include <iostream>
 #include <sstream>
@@ -19,17 +18,17 @@
 #include <TLine.h>
 // make sure the variables are the same in the N2_study.C
 #define Maxpt 2000
-#define NN2 20
-#define MinN2 0
+#define NN2 28
+#define MinN2 -0.2
 #define MaxN2 0.5
-#define Nrho 16
-#define Minrho -5
+#define Nrho 20
+#define Minrho -6
 #define Maxrho -1
 //
 using namespace std;
 //string sig_root="/eos/cms/store/group/phys_exotica/monoHiggs/monoHbb/Analyser_Outputs/N2_N3_Study/EXO-ggToXdXdHToBB_sinp_0p35_tanb_1p0_mXd_10_MH3_1600_MH4_150_MH2_1600_MHC_1600_CP3Tune_13TeV_0000_0.root";
 
-string sig_root="/eos/cms/store/group/phys_exotica/monoHiggs/monoHbb/Analyser_Outputs/N2_N3_Study/EXO-ggToXdXdHToBB_sinp_0p35_tanb_1p0_mXd_10_MH3_1000_MH4_150_MH2_1000_MHC_1000_CP3Tune_13TeV_0000_0.root";
+string sig_root="/afs/cern.ch/work/d/dekumar/public/monoH/Analyzer/CMSSW_10_3_0/src/ExoPieProducer/ExoPieAnalyzer/OutputForRaman/EXO-ggToXdXdHToBB_sinp_0p35_tanb_1p0_mXd_10_MH3_1000_MH4_150_MH2_1000_MHC_1000_CP3Tune_13TeV_0000_0.root";
 string s1 = "n2b1_v20";
 string s2 = "n2b2_v20";
 
@@ -41,14 +40,37 @@ string s2 = "n2b2_v20";
 #define LL 78.5
 #define hadron 303.9
 
+void load_to_hist(string s1, TH3D* h, vector<double>& v, int& count, int& N){
+	TFile* myfile = new TFile(s1.c_str(),"READ");
+	TTreeReader myRead("monoHbb_SR_boosted",myfile);  
+	TTreeReaderValue< Double_t > n2b1(myRead,"FJetN2b1");
+	TTreeReaderValue< Double_t > n2b2(myRead,"FJetN2b2");
+	TTreeReaderValue< Double_t > rho(myRead,"FJetrho");
+	TTreeReaderValue< Double_t > pt(myRead,"FJetPt");
+	TH1D* h_tmp = (TH1D*) h->ProjectionY("",0,-1,0,-1);
+	double width = h_tmp->GetBinWidth(1);
+	double init = h_tmp->GetBinLowEdge(1);
+	while (myRead.Next()){  // loop in one root file
+		if (*rho < Minrho ||*rho > Maxrho) continue;
+		int i = floor((double)(*rho - init) / width );
+		if(v[i] == -1) {
+			h->Fill(*n2b1,*rho,*pt);
+			count++;
+		}else { 
+			h->Fill(*n2b1-v[i],*rho,*pt);
+			if ( *n2b1-v[i] < 0 ) count++;
+		}
+		N++;
+	}
+}
 void plot_3(){
-	TH3D* h_sig = new TH3D("signal_3D","signal",2*NN2,-1.0*MaxN2,MaxN2, Nrho,Minrho,Maxrho, 3,0, Maxpt);
+	TH3D* h_sig = new TH3D("signal_3D","signal",NN2,MinN2,MaxN2, Nrho,Minrho,Maxrho, 3,0, Maxpt);
 	//TH3D* h_sig_b2 = (TH3D*) h_sig_b1->Clone("signal_n2b2");
 	TH3D* h_top[3];
-	h_top[0] = new TH3D("top_1","top_1",2*NN2,-1.0*MaxN2,MaxN2, Nrho,Minrho,Maxrho, 3,0, Maxpt);
+	h_top[0] = new TH3D("top_1","top_1",NN2,MinN2,MaxN2, Nrho,Minrho,Maxrho, 3,0, Maxpt);
 	h_top[1] = (TH3D*) h_top[0]->Clone("top_2");
 	h_top[2] = (TH3D*) h_top[0]->Clone("top_3");
-	TH3D* h_QCD = new TH3D("QCD","QCD",2*NN2,-1.0*MaxN2,MaxN2, Nrho,Minrho,Maxrho, 3,0, Maxpt);
+	TH3D* h_QCD = new TH3D("QCD","QCD",NN2,MinN2,MaxN2, Nrho,Minrho,Maxrho, 3,0, Maxpt);
 	vector<double> v_n2b1,v_n2b2;
 	
 	TFile* myfile = new TFile("TH3_output.root","READ");
@@ -60,7 +82,7 @@ void plot_3(){
 		for (auto x : *n2b2) v_n2b2.push_back(x);
 	}
 
-	ifstream infile("list_show.txt");
+	ifstream infile("QCD_list.txt");
 	string line;
 	int N = 0, count = 0;
 	while(getline(infile,line)){
@@ -102,7 +124,7 @@ void plot_3(){
 	auto c1 = new TCanvas("c1","c1");
 	TH1D* h1 = (TH1D*)h_sig->ProjectionX("signal_1D",0,-1,0,-1);
 	h1->Scale(1.0/h1->Integral());
-	h1->SetXTitle("N2ddt");
+	h1->SetXTitle("N_{2}^{DDT}(N_{2}^{1.0})");
 	h1->SetLineColor(kRed);
 	h1->Draw("HIST E");
 	TH1D* h2 = (TH1D*)h_QCD->ProjectionX("QCD",0,-1,0,-1);

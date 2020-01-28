@@ -4,7 +4,6 @@
 */
 ////////////////////////////////////////////////
 
-#include "load_to_hist_n2b2.C"
 #include "N2_study.C"
 #include <iostream>
 #include <sstream>
@@ -22,14 +21,14 @@
 #define NN2 28
 #define MinN2 -0.2
 #define MaxN2 0.5
-#define Nrho 16
-#define Minrho -5
+#define Nrho 20
+#define Minrho -6
 #define Maxrho -1
 //
 using namespace std;
 //string sig_root="/eos/cms/store/group/phys_exotica/monoHiggs/monoHbb/Analyser_Outputs/N2_N3_Study/EXO-ggToXdXdHToBB_sinp_0p35_tanb_1p0_mXd_10_MH3_1600_MH4_150_MH2_1600_MHC_1600_CP3Tune_13TeV_0000_0.root";
 
-string sig_root="/eos/cms/store/group/phys_exotica/monoHiggs/monoHbb/Analyser_Outputs/N2_N3_Study/EXO-ggToXdXdHToBB_sinp_0p35_tanb_1p0_mXd_10_MH3_1000_MH4_150_MH2_1000_MHC_1000_CP3Tune_13TeV_0000_0.root";
+string sig_root="/afs/cern.ch/work/d/dekumar/public/monoH/Analyzer/CMSSW_10_3_0/src/ExoPieProducer/ExoPieAnalyzer/OutputForRaman/EXO-ggToXdXdHToBB_sinp_0p35_tanb_1p0_mXd_10_MH3_1000_MH4_150_MH2_1000_MHC_1000_CP3Tune_13TeV_0000_0.root";
 string s1 = "n2b1_v20";
 string s2 = "n2b2_v20";
 
@@ -40,6 +39,30 @@ string s2 = "n2b2_v20";
 #define semi 308.9
 #define LL 78.5
 #define hadron 303.9
+
+
+void load_to_hist_n2b2(string s1, TH3D* h, vector<double>& v, int& count, int& N){
+	TFile* myfile = new TFile(s1.c_str(),"READ");
+	TTreeReader myRead("monoHbb_SR_boosted",myfile);  
+	TTreeReaderValue< Double_t > n2b2(myRead,"FJetN2b2");
+	TTreeReaderValue< Double_t > rho(myRead,"FJetrho");
+	TTreeReaderValue< Double_t > pt(myRead,"FJetPt");
+	TH1D* h_tmp = (TH1D*) h->ProjectionY("",0,-1,0,-1);
+	double width = h_tmp->GetBinWidth(1);
+	double init = h_tmp->GetBinLowEdge(1);
+	while (myRead.Next()){  // loop in one root file
+		if (*rho < Minrho ||*rho > Maxrho) continue;
+		int i = floor((double)(*rho - init) / width );
+		if(v[i] == -1) {
+			h->Fill(*n2b2,*rho,*pt);
+			count++;
+		}else { 
+			h->Fill(*n2b2-v[i],*rho,*pt);
+			if ( *n2b2-v[i] < 0 ) count++;
+		}
+		N++;
+	}
+}
 
 void plot_n2b2_3(){
 	TH3D* h_sig = new TH3D("signal_3D","signal",NN2,MinN2,MaxN2, Nrho,Minrho,Maxrho, 3,0, Maxpt);
@@ -60,7 +83,7 @@ void plot_n2b2_3(){
 		for (auto x : *n2b2) v_n2b2.push_back(x);
 	}
 
-	ifstream infile("list_show.txt");
+	ifstream infile("QCD_list.txt");
 	string line;
 	int N = 0, count = 0;
 	while(getline(infile,line)){
