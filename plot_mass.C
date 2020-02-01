@@ -21,19 +21,42 @@
 #define NN2 28
 #define MinN2 -0.2
 #define MaxN2 0.5
-#define Nrho 16
-#define Minrho -5
+#define Nrho 20
+#define Minrho -6
 #define Maxrho -1
 
-//double d = (double) (Maxrho - Minrho) / (double)Nrho;  // this is the width of the rho bin in N2_study.C
+#define NMass 40
+#define MinMass 100
+#define MaxMass 500
 //
 using namespace std;
-//string sig_root="/eos/cms/store/group/phys_exotica/monoHiggs/monoHbb/Analyser_Outputs/N2_N3_Study/EXO-ggToXdXdHToBB_sinp_0p35_tanb_1p0_mXd_10_MH3_1600_MH4_150_MH2_1600_MHC_1600_CP3Tune_13TeV_0000_0.root";
-
-string sig_root="/eos/cms/store/group/phys_exotica/monoHiggs/monoHbb/Analyser_Outputs/N2_N3_Study/EXO-ggToXdXdHToBB_sinp_0p35_tanb_1p0_mXd_10_MH3_1000_MH4_150_MH2_1000_MHC_1000_CP3Tune_13TeV_0000_0.root";
-
-//string s1 = "n2b1_v26";
-//string s2 = "n2b2_v26";
+vector<double> v5,v20,v26,v50,v_cut;
+TH1D* h_n2[4];
+TH1D* h_n2ddt[4];
+TH1D* h_total = new TH1D("","h_total",NMass,MinMass,MaxMass);
+void load_to_hist(string s){
+	TFile* fin = new TFile(s.c_str(),"READ");
+	TTreeReader finRead("monoHbb_SR_boosted",fin);
+	TTreeReaderValue< Double_t > n2b1(finRead,"FJetN2b1");
+	TTreeReaderValue< Double_t > rho(finRead,"FJetrho");
+	TTreeReaderValue< Double_t > mass(finRead,"FJetMass");
+	while(finRead.Next()){
+		// for N2 cut //
+		if (*rho > Maxrho || *rho < Minrho) {
+			for(int i=0;i<4;i++) h_n2ddt[i]->Fill(*mass);
+		} else {
+			int rho_region = floor((double)(*rho - Minrho) / d );
+			if (*n2b1 - v5[rho_region] < 0) h_n2ddt[0]->Fill(*mass);
+			if (*n2b1 - v20[rho_region] < 0) h_n2ddt[1]->Fill(*mass);
+			if (*n2b1 - v26[rho_region] < 0) h_n2ddt[2]->Fill(*mass);
+			if (*n2b1 - v50[rho_region] < 0) h_n2ddt[3]->Fill(*mass);
+		}
+		h_total->Fill(*mass);
+		for (int i=0;i<4;i++){
+			if (*n2b1<v_cut[i]) h_n2[i]->Fill(*mass);
+		}
+	}
+}
 
 // the top sample xs:
 #define semi 308.9
@@ -41,10 +64,7 @@ string sig_root="/eos/cms/store/group/phys_exotica/monoHiggs/monoHbb/Analyser_Ou
 #define hadron 303.9
 
 void plot_mass(){
-	TH3D* h_sig = new TH3D("signal_3D","signal",NN2,MinN2,MaxN2, Nrho,Minrho,Maxrho, 3,0, Maxpt);
-	//TH3D* h_sig_b2 = (TH3D*) h_sig_b1->Clone("signal_n2b2");
 	string per[4] = {"5% select.","20% select.","26% select.","50% select."};
-	vector<double> v5,v20,v26,v50,v_cut;
 	
 	TFile* myfile = new TFile("TH3_output.root","READ");
 	TTreeReader myRead("tree",myfile);  
@@ -61,35 +81,21 @@ void plot_mass(){
 		for (auto x : *n2b1_cut) v_cut.push_back(x);
 	}
 
-	int N = 0, count = 0;
 	
 	//load signal and do the plot
-	TH1D* h_n2[4];
-	TH1D* h_n2ddt[4];
+
 	for (int i=0;i<4;i++){
-		h_n2[i] = new TH1D("",Form("h_n2_%i",i),50,100,200);
-		h_n2ddt[i] = new TH1D("",Form("h_n2ddt_%i",i),50,100,200);
-	}
-	TH1D* h_total = new TH1D("","h_total",50,100,200);
-	
-	TFile* fin = new TFile(sig_root.c_str(),"READ");
-	TTreeReader finRead("monoHbb_SR_boosted",fin);
-	TTreeReaderValue< Double_t > n2b1(finRead,"FJetN2b1");
-	TTreeReaderValue< Double_t > rho(finRead,"FJetrho");
-	TTreeReaderValue< Double_t > mass(finRead,"FJetMass");
-	while(finRead.Next()){
-		// for N2 cut //
-		for (int i=0;i<4;i++){
-			if (*n2b1<v_cut[i]) h_n2[i]->Fill(*mass);
-		}
-		int rho_region = floor((double)(*rho - Minrho) / d );
-		if (*n2b1 - v5[rho_region] < 0) h_n2ddt[0]->Fill(*mass);
-		if (*n2b1 - v20[rho_region] < 0) h_n2ddt[1]->Fill(*mass);
-		if (*n2b1 - v26[rho_region] < 0) h_n2ddt[2]->Fill(*mass);
-		if (*n2b1 - v50[rho_region] < 0) h_n2ddt[3]->Fill(*mass);
-		h_total->Fill(*mass);
+		h_n2[i] = new TH1D("",Form("h_n2_%i",i),NMass,MinMass,MaxMass);
+		h_n2ddt[i] = new TH1D("",Form("h_n2ddt_%i",i),NMass,MinMass,MaxMass);
 	}
 
+	
+	ifstream infile("QCD_list.txt");
+	string line;
+	while(getline(infile,line)){
+		load_to_hist(line);
+	}
+	
 	gStyle->SetOptStat("");	
 	
 	auto c1 = new TCanvas("c1","c1");
@@ -98,7 +104,7 @@ void plot_mass(){
 	h_total->Scale(1.0/h_total->Integral());
 	h_total->SetTitle("N2");
 	h_total->SetXTitle("FJetmass[GeV]");
-	h_total->SetAxisRange(0, 0.2, "Y");
+	//h_total->SetAxisRange(0, 0.2, "Y");
 	h_total->Draw("SAME HIST");
 	legend->AddEntry(h_total,"inclusive");
 	for (int i=3;i>=0;i--){

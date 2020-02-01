@@ -1,4 +1,4 @@
-///////////////////////////
+	///////////////////////////
 /*
 	this is used to study N2 value in jetpt/ rho
 	in the end, output the root file with X(N% selection eff. of QCD)
@@ -122,25 +122,31 @@ void Draw_and_write( vector<vector<Data>>& v, string name, vector<Double_t>& vn2
 
 	// plot 
 	gStyle->SetOptStat("");	
-	//TLegend* legend = new TLegend(0.7,0.7,0.9,0.9);
+	TLegend* legend = new TLegend(0.8,0.8,0.7,0.7);
 	//legend->AddEntry(dt1,"X(20% QCD selection eff.)");
 	auto c1 = new TCanvas(Form("c_%s_n2b1",name.c_str()),Form("c_%s_n2b1",name.c_str()) );
-	h1->SetTitle(Form("%s_n2b1",name.c_str()));
-	h1->Project3D("XY")->Draw("VIOLIN(03001000)");
+	//h1->SetTitle(Form("%s_n2b1",name.c_str()));
+	TH1* h11 = h1->Project3D("XY");
+	h11->SetTitle("");
+	h11->Draw("VIOLIN(03001000)");
 	dt1->Draw("* SAME");
 	//legend->Draw();
 	c1->Write();
 	c1->SaveAs(Form("c_%s_n2b1.png",name.c_str()) );
 	auto c2 = new TCanvas(Form("c_%s_n2b2",name.c_str()),Form("c_%s_n2b2",name.c_str()) );
-	h2->SetTitle(Form("%s_n2b2",name.c_str()));
-	h2->Project3D("XY")->Draw("VIOLIN(03001000)");
+	//h2->SetTitle(Form("%s_n2b2",name.c_str()));
+	TH1* h22 = h2->Project3D("XY");
+	h22->SetTitle("");
+	h22->Draw("VIOLIN(03001000)");
 	dt2->Draw("* SAME");
 	//legend->Draw();
 	c2->Write();
 	c2->SaveAs(Form("c_%s_n2b2.png",name.c_str()) );
 	auto c3 = new TCanvas(Form("c_%s_n2b1DDT",name.c_str()),Form("c_%s_n2b1DDT",name.c_str()) );
-	h3->SetTitle(Form("%s_n2b1DDT",name.c_str()));
-	h3->Project3D("XY")->Draw("VIOLIN(03001000)");
+	//h3->SetTitle(Form("%s_n2b1DDT",name.c_str()));
+	TH1* h33 = h3->Project3D("XY");
+	h33->SetTitle("");
+	h33->Draw("VIOLIN(03001000)");
 	dt0->Draw("* SAME");
 	//legend->Draw();
 	c3->Write();
