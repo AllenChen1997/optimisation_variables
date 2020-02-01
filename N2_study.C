@@ -127,7 +127,7 @@ void Draw_and_write( vector<vector<Data>>& v, string name, vector<Double_t>& vn2
 	auto c1 = new TCanvas(Form("c_%s_n2b1",name.c_str()),Form("c_%s_n2b1",name.c_str()) );
 	//h1->SetTitle(Form("%s_n2b1",name.c_str()));
 	TH1* h11 = h1->Project3D("XY");
-	h11->SetTitle("");
+	h11->SetTitle(Form("%s_n2b1",name.c_str()));
 	h11->Draw("VIOLIN(03001000)");
 	dt1->Draw("* SAME");
 	//legend->Draw();
@@ -136,7 +136,7 @@ void Draw_and_write( vector<vector<Data>>& v, string name, vector<Double_t>& vn2
 	auto c2 = new TCanvas(Form("c_%s_n2b2",name.c_str()),Form("c_%s_n2b2",name.c_str()) );
 	//h2->SetTitle(Form("%s_n2b2",name.c_str()));
 	TH1* h22 = h2->Project3D("XY");
-	h22->SetTitle("");
+	h22->SetTitle(Form("%s_n2b2",name.c_str()));
 	h22->Draw("VIOLIN(03001000)");
 	dt2->Draw("* SAME");
 	//legend->Draw();
@@ -145,15 +145,17 @@ void Draw_and_write( vector<vector<Data>>& v, string name, vector<Double_t>& vn2
 	auto c3 = new TCanvas(Form("c_%s_n2b1DDT",name.c_str()),Form("c_%s_n2b1DDT",name.c_str()) );
 	//h3->SetTitle(Form("%s_n2b1DDT",name.c_str()));
 	TH1* h33 = h3->Project3D("XY");
-	h33->SetTitle("");
+	h33->SetTitle(Form("%s_n2b1DDT",name.c_str()));
 	h33->Draw("VIOLIN(03001000)");
 	dt0->Draw("* SAME");
 	//legend->Draw();
 	c3->Write();
 	c3->SaveAs(Form("c_%s_n2b1DDT.png",name.c_str()) );
 	auto c4 = new TCanvas(Form("c_%s_n2b2DDT",name.c_str()),Form("c_%s_n2b2DDT",name.c_str()) );
-	h4->SetTitle(Form("%s_n2b2DDT",name.c_str()));
-	h4->Project3D("XY")->Draw("VIOLINX(03001000)");
+	//h4->SetTitle(Form("%s_n2b2DDT",name.c_str()));
+	TH1* h44 = h4->Project3D("XY");
+	h44->SetTitle(Form("%s_n2b2DDT",name.c_str()));
+	h44->Draw("VIOLINX(03001000)");
 	dt0->Draw("* SAME");
 	//legend->Draw();
 	c4->Write();
@@ -221,13 +223,13 @@ void N2_study(){
 	Draw_and_write(v1,"5",n2b1_v5,n2b2_v5,0.05);
 	Draw_and_write(v1,"50",n2b1_v50,n2b2_v50,0.5);
 	
-	Draw_and_write(v_pt1,"pt200to400",v_for_no_used,v_for_no_used_2,0.2);
+	Draw_and_write(v_pt1,"pt200to400",v_for_no_used,v_for_no_used_2,0.26);
 	v_for_no_used.clear(); v_for_no_used_2.clear();
-	Draw_and_write(v_pt2,"pt400to600",v_for_no_used,v_for_no_used_2,0.2);
+	Draw_and_write(v_pt2,"pt400to600",v_for_no_used,v_for_no_used_2,0.26);
 	v_for_no_used.clear(); v_for_no_used_2.clear();
-	Draw_and_write(v_pt3,"pt600to800",v_for_no_used,v_for_no_used_2,0.2);
+	Draw_and_write(v_pt3,"pt600to800",v_for_no_used,v_for_no_used_2,0.26);
 	v_for_no_used.clear(); v_for_no_used_2.clear();
-	Draw_and_write(v_pt4,"ptOver800",v_for_no_used,v_for_no_used_2,0.2);
+	Draw_and_write(v_pt4,"ptOver800",v_for_no_used,v_for_no_used_2,0.26);
 	
 	// get different N2b1 cut
 	sort_Nper(v_total,n2b1_cut);
