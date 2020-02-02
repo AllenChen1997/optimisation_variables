@@ -10,6 +10,7 @@
 #include <TTree.h>
 #include <TFile.h>
 #include <TH3D.h>
+#include <TH2D.h>
 #include <TROOT.h>
 #include <TCanvas.h>
 #include <TLegend.h>
@@ -222,15 +223,34 @@ void N2_study(){
 	Draw_and_write(v1,"26",n2b1_v26,n2b2_v26,0.26);
 	Draw_and_write(v1,"5",n2b1_v5,n2b2_v5,0.05);
 	Draw_and_write(v1,"50",n2b1_v50,n2b2_v50,0.5);
-	
+	// for the diff-pt-regions //
+	TH2D* h_pt_rho = new TH2D("h_pt_rho","",Nrho,Minrho,Maxrho,4,200,1000);
 	Draw_and_write(v_pt1,"pt200to400",v_for_no_used,v_for_no_used_2,0.26);
+	for (int i=0;i<v_for_no_used.size();i++){
+		if (v_for_no_used[i] == -1) continue;
+		h_pt_rho->SetBinContent(i+1,1,v_for_no_used[i]);
+	}
 	v_for_no_used.clear(); v_for_no_used_2.clear();
 	Draw_and_write(v_pt2,"pt400to600",v_for_no_used,v_for_no_used_2,0.26);
+	for (int i=0;i<v_for_no_used.size();i++){
+		if (v_for_no_used[i] == -1) continue;
+		h_pt_rho->SetBinContent(i+1,2,v_for_no_used[i]);
+	}
 	v_for_no_used.clear(); v_for_no_used_2.clear();
 	Draw_and_write(v_pt3,"pt600to800",v_for_no_used,v_for_no_used_2,0.26);
+	for (int i=0;i<v_for_no_used.size();i++){
+		if (v_for_no_used[i] == -1) continue;
+		h_pt_rho->SetBinContent(i+1,3,v_for_no_used[i]);
+	}
 	v_for_no_used.clear(); v_for_no_used_2.clear();
 	Draw_and_write(v_pt4,"ptOver800",v_for_no_used,v_for_no_used_2,0.26);
-	
+	for (int i=0;i<v_for_no_used.size();i++){
+		if (v_for_no_used[i] == -1) continue;
+		h_pt_rho->SetBinContent(i+1,4,v_for_no_used[i]);
+	}
+	TCanvas* cpt = new TCanvas("cpt","cpt");
+	h_pt_rho->Draw("COLZ");
+	cpt->SaveAs("n2b1_rho_pt.png");
 	// get different N2b1 cut
 	sort_Nper(v_total,n2b1_cut);
 	
