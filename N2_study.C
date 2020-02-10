@@ -61,7 +61,7 @@ void sort_Nper( vector<Data>& v, vector<Double_t>& vout1){
 	double percent[4] = {0.05,0.2,0.26,0.5};
 	sort(v.begin(),v.end(),less<Data>());
 	for (int i=0;i<4;i++){
-		double num = v[percent[i]*v.size()].Getn2b1();
+		double num = v[round(percent[i]*v.size())].Getn2b1();
 		vout1.push_back(num);
 	}
 }
@@ -101,7 +101,7 @@ void Draw_and_write( vector<vector<Data>>& v, string name, vector<Double_t>& vn2
 			vn2b2.push_back(-1);
 			continue;
 		}
-		rho5per = floor(v[i].size()*Npercent);
+		rho5per = round(v[i].size()*Npercent);
 		sort(v[i].begin(),v[i].end(),less<Data>()); // use the "defined" less function in class to sort
 		Double_t in2b1 = v[i][rho5per].Getn2b1();
 		sort(v[i].begin(),v[i].end(),greater<Data>());
