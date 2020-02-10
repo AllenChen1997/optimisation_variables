@@ -38,7 +38,7 @@ string s1 = "n2b1_v26";
 #define semi 308.9
 #define LL 78.5
 #define hadron 303.9
-#define Lumi 41000 // 1/pb
+#define Lumi 41000.0 // 1/pb
 
 void load_to_hist(string s, TH3D* h, vector<double>& v, double& count, double& N, double xsbkg){
 	TFile* myfile = new TFile(s.c_str(),"READ");
@@ -48,35 +48,37 @@ void load_to_hist(string s, TH3D* h, vector<double>& v, double& count, double& N
 	TTreeReaderValue< Double_t > rho(myRead,"FJetrho");
 	TTreeReaderValue< Double_t > pt(myRead,"FJetPt");
 	TH1D* h_tmp = (TH1D*) h->ProjectionY("",0,-1,0,-1);
-	double width = h_tmp->GetBinWidth(1);
-	double init = h_tmp->GetBinLowEdge(1);
+	double width = (double) (Maxrho -Minrho) / (double) Nrho;
 	while (myRead.Next()){  // loop in one root file
 		if (*rho < Minrho ||*rho > Maxrho) continue;
-		int i = floor((double)(*rho - init) / width );
+		int i = floor((double)(*rho - Minrho) / width );
 		if(v[i] == -1) {
 			h->Fill(*n2b1,*rho,*pt);
 			count+=1;
 		}else { 
 			h->Fill(*n2b1-v[i],*rho,*pt);
-			if ( *n2b1-v[i] < 0 ) count++;
+			if ( *n2b1-v[i] < 0 ) count+=1;
 		}
 		N+=1;
 	}
+	cout << "N " <<N << " count " << count << endl;
+	
 	if (xsbkg != 0){	
 		TH1F* h_event = (TH1F*) myfile->Get("h_total_mcweight");
 		double totalevent = h_event->Integral();
 		count = (double)count* (double)Lumi* (double)xsbkg/ (double)totalevent;
 		N = (double)N* (double)Lumi* (double)xsbkg/ (double)totalevent;
+		
 	}
 }
 void plot_3(){
-	TH3D* h_sig = new TH3D("signal_3D","signal",NN2,MinN2,MaxN2, Nrho,Minrho,Maxrho, 3,0, Maxpt);
+	TH3D* h_sig = new TH3D("signal_3D","signal",NN2,MinN2,MaxN2, Nrho,Minrho,Maxrho, 4,0, Maxpt);
 	//TH3D* h_sig_b2 = (TH3D*) h_sig_b1->Clone("signal_n2b2");
 	TH3D* h_top[3];
-	h_top[0] = new TH3D("top_1","top_1",NN2,MinN2,MaxN2, Nrho,Minrho,Maxrho, 3,0, Maxpt);
+	h_top[0] = new TH3D("top_1","top_1",NN2,MinN2,MaxN2, Nrho,Minrho,Maxrho, 4,0, Maxpt);
 	h_top[1] = (TH3D*) h_top[0]->Clone("top_2");
 	h_top[2] = (TH3D*) h_top[0]->Clone("top_3");
-	TH3D* h_QCD = new TH3D("QCD","QCD",NN2,MinN2,MaxN2, Nrho,Minrho,Maxrho, 3,0, Maxpt);
+	TH3D* h_QCD = new TH3D("QCD","QCD",NN2,MinN2,MaxN2, Nrho,Minrho,Maxrho, 4,0, Maxpt);
 	vector<double> v_n2b1,v_n2b2;
 	
 	TFile* myfile = new TFile("TH3_output.root","READ");
