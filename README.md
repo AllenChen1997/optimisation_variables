@@ -4,6 +4,7 @@ How to run the code:
 
 	git clone https://github.com/AllenChen1997/optimisation_variables.git
 	cd optimisation_variables/
+	rm TH3_output.root
 	root -b N2_study.C
 
 you will see there is the TH3_output.root file, and lots of violin plot.
