@@ -1,9 +1,17 @@
-	///////////////////////////
+////////////////////////////////////////////////
 /*
 	this is used to study N2 value in jetpt/ rho
-	in the end, output the root file with X(N% selection eff. of QCD)
+	in the end, output the root file with X(N% selection eff. of QCD) N = 20,26
+	
+	the flow of the work:
+	1. load data to the vector: v1, v_pt1, v_pt2, v_pt3, and v_pt4 -> seperated with different rho region
+	   v_total -> no different rho region
+	2. run Draw_and_write() for getting n2b1 and n2b2 values in vector form
+	3. run sort_Nper() for getting n2b1 values (without seperated by rho region)
+	4. output TH3_output.root: this root file contains some violin plots and the "5, 20, 26, 50% QCD selection eff." n2b1 and n2b2 values 
+	
 */
-//////////////////////////
+////////////////////////////////////////////////
 
 #include <iostream>
 #include <sstream>
@@ -17,6 +25,7 @@
 #include <TLatex.h>
 #include <TAxis.h>
 
+// the param. setting for TH3 histogram
 #define Maxpt 2000
 #define NN2 28
 #define MinN2 -0.2
@@ -33,7 +42,7 @@
 using namespace std;
 
 double d = (double) (Maxrho - Minrho) / (double)Nrho;  // this is the width of the rho bin
-bool test = false;
+// creat spacial data type for std::vector
 class Data{
 private:
 	Double_t n2b1,n2b2,rho,pt;
@@ -47,16 +56,18 @@ public:
 	friend ostream& operator<<(ostream& out,const Data& foo){
 		return out << foo.n2b1 << " " << foo.n2b2 << " " << foo.pt << " " << foo.rho << endl;
 	}
+	// less() is used for n2b1
 	friend bool operator<(const Data& a, const Data& b){
 		return a.Getn2b1() < b.Getn2b1();
 	}
+	// greater() is used for n2b2
 	friend bool operator>(const Data& a, const Data& b){
 		return a.Getn2b2() < b.Getn2b2();
 	}
 		
 };
 
-void sort_Nper( vector<Data>& v, vector<Double_t>& vout1){
+void sort_Nper( vector<Data>& v, vector<Double_t>& vout1){ // this is used to output N2b1 cuts
 	// n = 50,25,10,5
 	double percent[4] = {0.05,0.2,0.26,0.5};
 	sort(v.begin(),v.end(),less<Data>());
@@ -75,25 +86,17 @@ void Draw_and_write( vector<vector<Data>>& v, string name, vector<Double_t>& vn2
 	TGraph* dt0 = new TGraph();
 	
 	TH3D* h1 = new TH3D(Form("h_%s_n2b1",name.c_str()),"N2-rho-jetPt",NN2,MinN2,MaxN2, Nrho,Minrho,Maxrho, 3,0, Maxpt); // n2-rho-pt
-		TAxis* xaxis = h1->GetXaxis();
-		TAxis* yaxis = h1->GetYaxis();
-		TAxis* zaxis = h1->GetZaxis();
-		xaxis->SetTitle("N^{1.0}_{2}");
-		yaxis->SetTitle("#rho");
-		zaxis->SetTitle("jetPt");
+		h1->SetXTitle("N^{1.0}_{2}");
+		h1->SetYTitle("#rho");
+		h1->SetZTitle("jetpt");
 	TH3D* h2 = (TH3D*) h1->Clone(Form("h_%s_n2b2",name.c_str()));
-		xaxis = h2->GetXaxis();
-		xaxis->SetTitle("N^{2.0}_{2}");
+		h2->SetXTitle("N^{2.0}_{2}");
 	TH3D* h3 = new TH3D(Form("h_%s_N2b1DDT",name.c_str()),"N2ddt-rho-jetpt",NN2,MinN2,MaxN2,Nrho,Minrho,Maxrho,3,0,Maxpt);
-		xaxis = h3->GetXaxis();
-		xaxis->SetTitle("N2DDT(N^{1.0}_{2})");
-		yaxis = h3->GetYaxis();
-		yaxis->SetTitle("#rho");
-		zaxis = h3->GetZaxis();
-		zaxis->SetTitle("jetPt");
+		h3->SetXTitle("N2DDT(N^{1.0}_{2})");
+		h3->SetYTitle("#rho");
+		h3->SetZTitle("jetPt");
 	TH3D* h4 = (TH3D*) h3->Clone(Form("h_%s_N2b2DDT",name.c_str()));
-		xaxis = h4->GetXaxis();
-		xaxis->SetTitle("N2DDT(N^{2.0}_{2})");
+		h4->SetXTitle("N2DDT(N^{2.0}_{2})");
 	int n=0;
 	for (int i = 0;i<v.size();i++){
 		if (v[i].empty() ) {
@@ -125,8 +128,9 @@ void Draw_and_write( vector<vector<Data>>& v, string name, vector<Double_t>& vn2
 	gStyle->SetOptStat("");	
 	TLegend* legend = new TLegend(0.8,0.8,0.7,0.7);
 	//legend->AddEntry(dt1,"X(20% QCD selection eff.)");
+	
+	// c1 = n2b1 violin plot //
 	auto c1 = new TCanvas(Form("c_%s_n2b1",name.c_str()),Form("c_%s_n2b1",name.c_str()) );
-	//h1->SetTitle(Form("%s_n2b1",name.c_str()));
 	TH1* h11 = h1->Project3D("XY");
 	h11->SetTitle(Form("%s_n2b1",name.c_str()));
 	h11->Draw("VIOLIN(03001000)");
@@ -134,8 +138,9 @@ void Draw_and_write( vector<vector<Data>>& v, string name, vector<Double_t>& vn2
 	//legend->Draw();
 	c1->Write();
 	c1->SaveAs(Form("c_%s_n2b1.png",name.c_str()) );
+	
+	// c2 = n2b2 violin plot //
 	auto c2 = new TCanvas(Form("c_%s_n2b2",name.c_str()),Form("c_%s_n2b2",name.c_str()) );
-	//h2->SetTitle(Form("%s_n2b2",name.c_str()));
 	TH1* h22 = h2->Project3D("XY");
 	h22->SetTitle(Form("%s_n2b2",name.c_str()));
 	h22->Draw("VIOLIN(03001000)");
@@ -143,8 +148,9 @@ void Draw_and_write( vector<vector<Data>>& v, string name, vector<Double_t>& vn2
 	//legend->Draw();
 	c2->Write();
 	c2->SaveAs(Form("c_%s_n2b2.png",name.c_str()) );
+	
+	// c3 = n2DDT(b=1) violin plot //
 	auto c3 = new TCanvas(Form("c_%s_n2b1DDT",name.c_str()),Form("c_%s_n2b1DDT",name.c_str()) );
-	//h3->SetTitle(Form("%s_n2b1DDT",name.c_str()));
 	TH1* h33 = h3->Project3D("XY");
 	h33->SetTitle(Form("%s_n2b1DDT",name.c_str()));
 	h33->Draw("VIOLIN(03001000)");
@@ -152,8 +158,9 @@ void Draw_and_write( vector<vector<Data>>& v, string name, vector<Double_t>& vn2
 	//legend->Draw();
 	c3->Write();
 	c3->SaveAs(Form("c_%s_n2b1DDT.png",name.c_str()) );
+	
+	// c4 = n2DDT(b=2) violin plot //
 	auto c4 = new TCanvas(Form("c_%s_n2b2DDT",name.c_str()),Form("c_%s_n2b2DDT",name.c_str()) );
-	//h4->SetTitle(Form("%s_n2b2DDT",name.c_str()));
 	TH1* h44 = h4->Project3D("XY");
 	h44->SetTitle(Form("%s_n2b2DDT",name.c_str()));
 	h44->Draw("VIOLINX(03001000)");
@@ -166,10 +173,10 @@ void Draw_and_write( vector<vector<Data>>& v, string name, vector<Double_t>& vn2
 void N2_study(){
 	vector< vector<Data>> v1(Nrho); // used to store & sort the data in different rho region
 	vector< vector<Data>> v_pt1(Nrho),v_pt2(Nrho),v_pt3(Nrho),v_pt4(Nrho); // used to store & sort the data in different pt region
-	vector< Data > v_total;
-	vector< Double_t > n2b1_v20, n2b1_v26, n2b1_v5, n2b1_v50, n2b1_cut;
+	vector< Data > v_total; // for generate N2 cut
+	vector< Double_t > n2b1_v20, n2b1_v26, n2b1_v5, n2b1_v50, n2b1_cut; // the output values will put into them
 	vector< Double_t > n2b2_v20, n2b2_v26, n2b2_v5, n2b2_v50;
-	vector< Double_t > v_for_no_used,v_for_no_used_2;
+	vector< Double_t > v_for_no_used,v_for_no_used_2;// just for call the function
 	TH3D* h_n2b1 = new TH3D("h_n2b1","h_n2b1",NN2,MinN2,MaxN2, Nrho,Minrho,Maxrho, 3,0, Maxpt); // for short test
 	TH3D* h_n2b2 = (TH3D*) h_n2b1->Clone("h_n2b2");
 	// input file data
@@ -177,7 +184,6 @@ void N2_study(){
 	string line;
 	int i=0,overN=0,lowerN=0; // lowerN is the number of which pt lower than 0, overN is the number of which pt > Maxpt
 	
-	double ixs;
 	while(getline(infile,line)){ // loop in the root file list
 	   cout << line << endl;
 		TFile* myfile = new TFile(line.c_str(),"READ");
@@ -186,7 +192,7 @@ void N2_study(){
 		TTreeReaderValue< Double_t > n2b2(myRead,"FJetN2b2");
 		TTreeReaderValue< Double_t > rho(myRead,"FJetrho");
 		TTreeReaderValue< Double_t > pt(myRead,"FJetPt");
-		int N = myRead.GetEntries(); //get the entires info.
+		int N = myRead.GetEntries(); //get the number entires info.
 		if (N == 0) continue;
 		i++;
 		while (myRead.Next()){  // loop in one root file
@@ -260,23 +266,6 @@ void N2_study(){
 	cpt->SaveAs("n2b1_rho_pt.png");
 	// get different N2b1 cut
 	sort_Nper(v_total,n2b1_cut);
-	
-	// output test 
-	if (test){
-		cout << "comparing vector sorting and getquantiles(n2b1) " << endl;
-		cout << "  getQuantiles  " << endl;
-		for (auto x : n2b1_v5 ) cout << setw(9) << x <<  " ";
-		cout << endl;
-		cout << " vector sorting " << endl;
-		for (auto x : n2b1_v20 ) cout << setw(9) << x << " ";
-		cout << endl;
-
-		cout << "comparing vector and histogram(contents) " << endl;
-		cout << "  vector   " << endl;
-		for (auto x : v1 ) cout << setw(3) << x.size() <<  " ";
-		cout << endl;
-
-	}	//
 	
 	outTree.Fill();
 	fout->Write();
