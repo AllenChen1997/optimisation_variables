@@ -254,15 +254,13 @@ void N2_study(){
 		if (v_for_no_used[i] == -1) continue;
 		h_pt_rho->SetBinContent(i+1,4,v_for_no_used[i]);
 	}
-	
-	//h_pt_rho->SetMinimum(0.2);
-	//h_pt_rho->SetMaximum(0.32);
-	h_pt_rho->SetMinimum(h_pt_rho->GetMinimum());
-	h_pt_rho->SetMaximum(h_pt_rho->GetMaximum());
+	gStyle->SetPaintTextFormat("5.3f");
+	h_pt_rho->SetMinimum(0.2);
+	h_pt_rho->SetMaximum(0.32);
 	TCanvas* cpt = new TCanvas("cpt","cpt");
 	h_pt_rho->SetXTitle("#rho");
 	h_pt_rho->SetYTitle("Pt");
-	h_pt_rho->Draw("COLZ");
+	h_pt_rho->Draw("COLZ TEXT0");
 	cpt->SaveAs("n2b1_rho_pt.png");
 	// get different N2b1 cut
 	sort_Nper(v_total,n2b1_cut);
