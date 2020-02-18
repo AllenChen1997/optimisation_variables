@@ -141,6 +141,7 @@ void plot_3(){
 	gStyle->SetOptStat("");	
 	h_top_0->Add(h_top_2);
 	h_top_0->Add(h_top_1);
+	
 	auto c1 = new TCanvas("c1","c1");
 	TH1D* h1 = (TH1D*)h_sig->ProjectionX("signal_1D",0,-1,0,-1);
 	h1->Scale(1.0/h1->Integral());
@@ -163,4 +164,10 @@ void plot_3(){
 	
 	c1->SaveAs("n2b1_new.png");
 	
+	auto c2 = new TCanvas("c2","c2");
+	TH2D* h_QCD_XY = (TH2D*) h_QCD->Project3D("XY");
+	h_QCD_XY->SetXTitle("#rho");
+	h_QCD_XY->SetYTitle("N2DDT");
+	h_QCD_XY->Draw("COL");
+	c2->SaveAs("2DMAP_rho_N2ddt.png");
 }

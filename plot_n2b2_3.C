@@ -29,11 +29,9 @@ using namespace std;
 //string sig_root="/eos/cms/store/group/phys_exotica/monoHiggs/monoHbb/Analyser_Outputs/N2_N3_Study/EXO-ggToXdXdHToBB_sinp_0p35_tanb_1p0_mXd_10_MH3_1600_MH4_150_MH2_1600_MHC_1600_CP3Tune_13TeV_0000_0.root";
 
 string sig_root="/afs/cern.ch/work/d/dekumar/public/monoH/Analyzer/CMSSW_10_3_0/src/ExoPieProducer/ExoPieAnalyzer/OutputForRaman/EXO-ggToXdXdHToBB_sinp_0p35_tanb_1p0_mXd_10_MH3_1000_MH4_150_MH2_1000_MHC_1000_CP3Tune_13TeV_0000_0.root";
-string s1 = "n2b1_v20";
-string s2 = "n2b2_v20";
+//string s2 = "n2b2_v20";
 
-//string s1 = "n2b1_v26";
-//string s2 = "n2b2_v26";
+string s2 = "n2b2_v26";
 
 // the top sample xs:
 #define semi 308.9
@@ -72,14 +70,12 @@ void plot_n2b2_3(){
 	h_top[1] = (TH3D*) h_top[0]->Clone("top_2");
 	h_top[2] = (TH3D*) h_top[0]->Clone("top_3");
 	TH3D* h_QCD = new TH3D("QCD","QCD",NN2,MinN2,MaxN2, Nrho,Minrho,Maxrho, 3,0, Maxpt);
-	vector<double> v_n2b1,v_n2b2;
+	vector<double> v_n2b2;
 	
 	TFile* myfile = new TFile("TH3_output.root","READ");
 	TTreeReader myRead("tree",myfile);  
-	TTreeReaderValue<vector<double>> n2b1(myRead,Form("%s",s1.c_str()));
 	TTreeReaderValue<vector<double>> n2b2(myRead,Form("%s",s2.c_str()));
 	while(myRead.Next()){		
-		for (auto x : *n2b1) v_n2b1.push_back(x);
 		for (auto x : *n2b2) v_n2b2.push_back(x);
 	}
 
@@ -90,15 +86,17 @@ void plot_n2b2_3(){
 		load_to_hist_n2b2(line,h_QCD,v_n2b2,count,N);
 	}
 	cout << "the selection eff. of QCD " << (float) count / (float) N * 100 << " (%) " << endl;
-	N=0;count=0;
-	load_to_hist_n2b2(sig_root,h_sig,v_n2b2,count,N);
+	load_to_hist_n2b2(sig_root,h_sig,v_n2b2,count=0,N=0);
 	cout << "the selection eff. of signal " << (float) count / (float) N * 100 << " (%) " << endl;
-	N=0;count=0;
+	double eff=0;
 	load_to_hist_n2b2("/afs/cern.ch/work/d/dekumar/public/monoH/Analyzer/CMSSW_10_3_0/src/ExoPieProducer/ExoPieAnalyzer/OutputForRaman/TTToSemiLeptonic_TuneCP5_PSweights_13TeV-powheg-pythia8.root",h_top[0],v_n2b2,count=0,N=0);
-	load_to_hist_n2b2("/afs/cern.ch/work/d/dekumar/public/monoH/Analyzer/CMSSW_10_3_0/src/ExoPieProducer/ExoPieAnalyzer/OutputForRaman/TTTo2L2Nu_TuneCP5_PSweights_13TeV-powheg-pythia8.root",h_top[1],v_n2b2,count,N);
-	load_to_hist_n2b2("/afs/cern.ch/work/d/dekumar/public/monoH/Analyzer/CMSSW_10_3_0/src/ExoPieProducer/ExoPieAnalyzer/OutputForRaman/crab_TTToHadronic_TuneCP5_PSweights_13TeV-powheg-pythia8.root",h_top[2],v_n2b2,count,N);
+	eff += (float) count/ (float) N * semi ;
+	load_to_hist_n2b2("/afs/cern.ch/work/d/dekumar/public/monoH/Analyzer/CMSSW_10_3_0/src/ExoPieProducer/ExoPieAnalyzer/OutputForRaman/TTTo2L2Nu_TuneCP5_PSweights_13TeV-powheg-pythia8.root",h_top[1],v_n2b2,count=0,N=0);
+	eff += (float) count/ (float) N * LL ;
+	load_to_hist_n2b2("/afs/cern.ch/work/d/dekumar/public/monoH/Analyzer/CMSSW_10_3_0/src/ExoPieProducer/ExoPieAnalyzer/OutputForRaman/crab_TTToHadronic_TuneCP5_PSweights_13TeV-powheg-pythia8.root",h_top[2],v_n2b2,count=0,N=0);
+	eff += (float) count/ (float) N * hadron ;
 	
-	//cout << "the selection eff. of top " << (float) count / (float) N * 100 << " (%) " << endl;
+	cout << "the selection eff. of top " << (double) eff*100.0/(semi+LL+hadron) << " (%) " << endl;
 	TH1D* h_top_0 = (TH1D*) h_top[0]->ProjectionX("top_semi",0,-1,0,-1);
 	h_top_0->Scale(semi/h_top_0->Integral());
 	TH1D* h_top_1 = (TH1D*) h_top[1]->ProjectionX("top_LL",0,-1,0,-1);
