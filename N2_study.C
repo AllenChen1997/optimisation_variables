@@ -256,7 +256,7 @@ void N2_study(){
 	}
 	gStyle->SetPaintTextFormat("5.3f");
 	h_pt_rho->SetMinimum(0.2);
-	h_pt_rho->SetMaximum(0.32);
+	h_pt_rho->SetMaximum(0.35);
 	TCanvas* cpt = new TCanvas("cpt","cpt");
 	h_pt_rho->SetXTitle("#rho");
 	h_pt_rho->SetYTitle("Pt");
