@@ -20,7 +20,9 @@ you will get the N2DDT distribution plots for N2b1 / N2b2
 
 for the SF:
 
-in this version we only have one MC file, we divide this into two pieces by L52 in prepare_root.C
+in this version we only have one MC file, we divide this into two pieces by L52 in prepare_root.C 
+
+you need to change ">" to "<" and run again with different output name to generate another file(data.root) for makemyDatacard.C
 
 	root -b prepare_root.C
 	root -b makemyDatacard.C
