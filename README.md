@@ -17,3 +17,11 @@ Next, do
 	root -b plot_n2b2_3.C
 	
 you will get the N2DDT distribution plots for N2b1 / N2b2
+
+for the SF:
+
+in this version we only have one MC file, we divide this into two pieces by L52 in prepare_root.C
+
+	root -b prepare_root.C
+	root -b makemyDatacard.C
+	
