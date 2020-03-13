@@ -7,7 +7,7 @@ captp1 = N2DDT(26%)
 
 using namespace std;
 
-void makemyDatacard(string data, string MC) {
+void makemyDatacard(string data="data.root", string MC="MC.root") {
 
   TFile *fdata = TFile::Open((TString)data,"READONLY");
   TFile *fMC = TFile::Open((TString)MC,"READONLY");
