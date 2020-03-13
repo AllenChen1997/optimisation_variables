@@ -30,7 +30,7 @@ double d = (double)(Maxrho-Minrho)/(double)Nrho; // the width in rho histo.
 string cut_branch = "N2b1_v26";  //used to read cut root file branch
 
 using namespace std;
-void prepare_root(string inputname,string outputname="tmp.root", string cutname="TH3_output.root"){
+void prepare_root(string inputname="/afs/cern.ch/work/d/dekumar/public/monoH/Analyzer/CMSSW_10_3_0/src/ExoPieProducer/ExoPieAnalyzer/OutputForRaman/TTToSemiLeptonic_TuneCP5_PSweights_13TeV-powheg-pythia8.root",string outputname="MC.root", string cutname="../TH3_output.root"){
 	TFile* fcut = new TFile((TString)cutname,"READ");
 	TH2D* h_cut = (TH2D*) fcut->Get("h_pt_rho");
 
