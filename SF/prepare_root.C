@@ -27,29 +27,23 @@
 #define Minrho -6
 #define Maxrho -1
 double d = (double)(Maxrho-Minrho)/(double)Nrho; // the width in rho histo.
-string cut_branch = "N2b1_v26";  //used to read cut root file branch
 
 using namespace std;
-void prepare_root(string inputname="/afs/cern.ch/work/d/dekumar/public/monoH/Analyzer/CMSSW_10_3_0/src/ExoPieProducer/ExoPieAnalyzer/OutputForRaman/TTToSemiLeptonic_TuneCP5_PSweights_13TeV-powheg-pythia8.root",string outputname="MC.root", string cutname="../TH3_output.root"){
-	TFile* fcut = new TFile((TString)cutname,"READ");
-	TH2D* h_cut = (TH2D*) fcut->Get("h_pt_rho");
-
+void runcut(string inputname, TH2D* hcut, TH1D* hout, bool ispass, bool isdata){  // isdata is used tmp
 	TFile* fin = new TFile((TString)inputname,"READ");
 	TTreeReader myRead("monoHbb_SR_boosted",fin);
 	TTreeReaderValue< Double_t > N2(myRead,"FJetN2b1");
 	TTreeReaderValue< Double_t > pt(myRead,"FJetPt");
 	TTreeReaderValue< Double_t > rho(myRead,"FJetrho");
-	
-	TFile* fout = new TFile((TString)outputname,"NEW");
-	TH1D* h_pass = new TH1D("h_pass","h_pass",NN2,MinN2,MaxN2);
-	TH1D* h_fail = (TH1D*) h_pass->Clone("h_fail"); h_fail->SetTitle("h_fail");
+
 	int N = myRead.GetEntries();
 	int x,y;
 	int i=0;
 	while(myRead.Next()){
 		// for making fake data
 		i++;
-		if (i > N/2) continue;
+		if (isdata) if (i > N/2) continue;  // tmp. used to divide the file
+		if (! isdata) if(i < N/2) continue;
 		// deside in which pt region
 		if (*pt >= pt_r1 && *pt < pt_r2 ) y = 1;
 		else if (*pt >= pt_r2 && *pt < pt_r3) y = 2;
@@ -60,15 +54,41 @@ void prepare_root(string inputname="/afs/cern.ch/work/d/dekumar/public/monoH/Ana
 		if (*rho < Minrho) continue;
 		x = (ceil)(*rho - Minrho) / d;
 		// deside pass or fail
-		double N2cut = h_cut->GetBinContent(x,y);
+		double N2cut = hcut->GetBinContent(x,y);
 		if (N2cut == 0) continue;
 		double N2ddt = *N2 - N2cut;
-		if(N2ddt<0) h_pass->Fill(N2ddt);
-		else h_fail->Fill(N2ddt);
-		
+		if(ispass) {
+			if(N2ddt<0) hout->Fill(N2ddt);
+		}
+		else {
+			if(N2ddt>0) hout->Fill(N2ddt);
+		}
 	}
 
+}
+
+
+void prepare_root(string dataname="/afs/cern.ch/work/d/dekumar/public/monoH/Analyzer/CMSSW_10_3_0/src/ExoPieProducer/ExoPieAnalyzer/OutputForRaman/TTToSemiLeptonic_TuneCP5_PSweights_13TeV-powheg-pythia8.root",
+	string MCname="/afs/cern.ch/work/d/dekumar/public/monoH/Analyzer/CMSSW_10_3_0/src/ExoPieProducer/ExoPieAnalyzer/OutputForRaman/TTToSemiLeptonic_TuneCP5_PSweights_13TeV-powheg-pythia8.root", 
+	string cutname="../TH3_output.root", 
+	string outputname="pass.root", bool ispass=true){
+	TFile* fcut = new TFile((TString)cutname,"READ");
+	TH2D* h_cut = (TH2D*) fcut->Get("h_pt_rho");
+	
+	TFile* fout = new TFile((TString)outputname,"NEW");
+	TH1D* h_data = new TH1D("h_data","h_data",NN2,MinN2,MaxN2);
+	TH1D* h_MC = (TH1D*) h_data->Clone("h_MC"); h_MC->SetTitle("h_MC");
+	TH1D* data_obs = (TH1D*) h_data->Clone("data_obs"); data_obs->SetTitle("data_obs");
+	//TH1D* data_obs;
+	runcut(dataname,h_cut,h_data,ispass,true); // the fifth op. is tmp
+	runcut(MCname,h_cut,h_MC,ispass,false); // the fifth op. is tmp 
+	
+	
+	runcut(dataname,h_cut,data_obs,ispass,true);
+	
 	fout->Write();
 	fout->Close();
+	
+	if (outputname == "pass.root") prepare_root(dataname,MCname,cutname,"fail.root",false); //automatic generate fail.root
 	
 }

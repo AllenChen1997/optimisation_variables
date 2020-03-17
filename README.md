@@ -22,8 +22,8 @@ for the SF:
 
 in this version we only have one MC file, we divide this into two pieces by L52 in prepare_root.C 
 
-you need to change ">" to "<" and run again with different output name to generate another file(data.root) for makemyDatacard.C
-
+	cd SF/
 	root -b prepare_root.C
 	root -b makemyDatacard.C
 	
+you will see there are pass.root and fail.root for the input root files. and there is SF.txt for the datacard
