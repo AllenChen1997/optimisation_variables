@@ -19,9 +19,9 @@
 #define pt_r3 600
 #define pt_r4 800
 
-#define NN2 28
-#define MinN2 -0.2
-#define MaxN2 0.5
+#define Nmass 18
+#define Minmass 40
+#define Maxmass 130
 
 #define Nrho 20
 #define Minrho -6
@@ -35,7 +35,7 @@ void runcut(string inputname, TH2D* hcut, TH1D* hout, bool ispass, bool isdata){
 	TTreeReaderValue< Double_t > N2(myRead,"FJetN2b1");
 	TTreeReaderValue< Double_t > pt(myRead,"FJetPt");
 	TTreeReaderValue< Double_t > rho(myRead,"FJetrho");
-
+	TTreeReaderValue< Double_t > mass(myRead,"FJetMass");
 	int N = myRead.GetEntries();
 	int x,y;
 	int i=0;
@@ -58,10 +58,10 @@ void runcut(string inputname, TH2D* hcut, TH1D* hout, bool ispass, bool isdata){
 		if (N2cut == 0) continue;
 		double N2ddt = *N2 - N2cut;
 		if(ispass) {
-			if(N2ddt<0) hout->Fill(N2ddt);
+			if(N2ddt<0) hout->Fill(*mass);
 		}
 		else {
-			if(N2ddt>0) hout->Fill(N2ddt);
+			if(N2ddt>0) hout->Fill(*mass);
 		}
 	}
 
@@ -76,7 +76,7 @@ void prepare_root(string dataname="/afs/cern.ch/work/d/dekumar/public/monoH/Anal
 	TH2D* h_cut = (TH2D*) fcut->Get("h_pt_rho");
 	
 	TFile* fout = new TFile((TString)outputname,"NEW");
-	TH1D* h_data = new TH1D("h_data","h_data",NN2,MinN2,MaxN2);
+	TH1D* h_data = new TH1D("h_data","h_data",Nmass,Minmass,Maxmass);
 	TH1D* h_MC = (TH1D*) h_data->Clone("h_MC"); h_MC->SetTitle("h_MC");
 	TH1D* data_obs = (TH1D*) h_data->Clone("data_obs"); data_obs->SetTitle("data_obs");
 	//TH1D* data_obs;
