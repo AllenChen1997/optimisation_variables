@@ -132,41 +132,61 @@ void Draw_and_write( vector<vector<Data>>& v, string name, vector<Double_t>& vn2
 	// c1 = n2b1 violin plot //
 	auto c1 = new TCanvas(Form("c_%s_n2b1",name.c_str()),Form("c_%s_n2b1",name.c_str()) );
 	TH1* h11 = h1->Project3D("XY");
-	h11->SetTitle(Form("%s\%_n2b1",name.c_str()));
+	h11->SetTitle(Form("%s%%_n2b1",name.c_str()));
+	h11->SetTitleSize(0.07);
+	h11->GetXaxis()->SetLabelSize(0.05);
+	h11->GetXaxis()->SetTitleSize(0.05);
+	h11->GetYaxis()->SetLabelSize(0.05);
+	h11->GetYaxis()->SetTitleSize(0.05);
 	h11->Draw("VIOLIN(03001000)");
 	dt1->Draw("* SAME");
 	//legend->Draw();
-	c1->Write();
+	//c1->Write();
 	c1->SaveAs(Form("c_%s_n2b1.png",name.c_str()) );
 	
 	// c2 = n2b2 violin plot //
 	auto c2 = new TCanvas(Form("c_%s_n2b2",name.c_str()),Form("c_%s_n2b2",name.c_str()) );
 	TH1* h22 = h2->Project3D("XY");
-	h22->SetTitle(Form("%s\%_n2b2",name.c_str()));
+	h22->SetTitle(Form("%s%%_n2b2",name.c_str()));
+	h22->SetTitleSize(0.07);
+	h22->GetXaxis()->SetLabelSize(0.05);
+	h22->GetXaxis()->SetTitleSize(0.05);
+	h22->GetYaxis()->SetLabelSize(0.05);
+	h22->GetYaxis()->SetTitleSize(0.05);
 	h22->Draw("VIOLIN(03001000)");
 	dt2->Draw("* SAME");
 	//legend->Draw();
-	c2->Write();
+	//c2->Write();
 	c2->SaveAs(Form("c_%s_n2b2.png",name.c_str()) );
 	
 	// c3 = n2DDT(b=1) violin plot //
-	auto c3 = new TCanvas(Form("c_%s_n2b1DDT",name.c_str()),Form("c_%s_n2b1DDT",name.c_str()) );
+	auto c3 = new TCanvas(Form("c_%s_n2b1DDT",name.c_str()),Form("c_%s_n2b1DDT",name.c_str()),800,500 );
 	TH1* h33 = h3->Project3D("XY");
-	h33->SetTitle(Form("%s\%_n2b1DDT",name.c_str()));
+	h33->SetTitle(Form("%s%%_n2b1DDT",name.c_str()));
+	h33->SetTitleSize(0.07);
+	h33->GetXaxis()->SetLabelSize(0.05);
+	h33->GetXaxis()->SetTitleSize(0.05);
+	h33->GetYaxis()->SetLabelSize(0.05);
+	h33->GetYaxis()->SetTitleSize(0.05);
 	h33->Draw("VIOLIN(03001000)");
 	dt0->Draw("* SAME");
 	//legend->Draw();
-	c3->Write();
+	//c3->Write();
 	c3->SaveAs(Form("c_%s_n2b1DDT.png",name.c_str()) );
 	
 	// c4 = n2DDT(b=2) violin plot //
-	auto c4 = new TCanvas(Form("c_%s_n2b2DDT",name.c_str()),Form("c_%s_n2b2DDT",name.c_str()) );
+	auto c4 = new TCanvas(Form("c_%s_n2b2DDT",name.c_str()),Form("c_%s_n2b2DDT",name.c_str()),800,500 );
 	TH1* h44 = h4->Project3D("XY");
-	h44->SetTitle(Form("%s\%_n2b2DDT",name.c_str()));
+	h44->SetTitle(Form("%s%%_n2b2DDT",name.c_str()));
+	h44->SetTitleSize(0.07);
+	h44->GetXaxis()->SetLabelSize(0.05);
+	h44->GetXaxis()->SetTitleSize(0.05);
+	h44->GetYaxis()->SetLabelSize(0.05);
+	h44->GetYaxis()->SetTitleSize(0.05);
 	h44->Draw("VIOLINX(03001000)");
 	dt0->Draw("* SAME");
 	//legend->Draw();
-	c4->Write();
+	//c4->Write();
 	c4->SaveAs(Form("c_%s_n2b2DDT.png",name.c_str()) );
 }
 
@@ -257,9 +277,14 @@ void N2_study(){
 	gStyle->SetPaintTextFormat("5.3f");
 	h_pt_rho->SetMinimum(0.2);
 	h_pt_rho->SetMaximum(0.35);
-	TCanvas* cpt = new TCanvas("cpt","cpt");
+	TCanvas* cpt = new TCanvas("cpt","cpt",800,500);
 	h_pt_rho->SetXTitle("#rho");
-	h_pt_rho->SetYTitle("Pt");
+	h_pt_rho->GetXaxis()->SetTitleSize(0.05);
+	h_pt_rho->GetXaxis()->SetLabelSize(0.05);
+	h_pt_rho->SetYTitle("P_{T} (GeV)");
+	h_pt_rho->GetYaxis()->SetTitleSize(0.05);
+	h_pt_rho->GetYaxis()->SetLabelSize(0.05);
+	h_pt_rho->SetTitleOffset(1.0,"Y");
 	h_pt_rho->Draw("COLZ TEXT0");
 	cpt->SaveAs("n2b1_rho_pt.png");
 	// get different N2b1 cut

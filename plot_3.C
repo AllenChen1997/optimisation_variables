@@ -148,6 +148,11 @@ void plot_3(){
 	h1->SetXTitle("N_{2}^{DDT}(N_{2}^{1.0})");
 	h1->SetTitle("");
 	h1->SetLineColor(kRed);
+	h1->GetXaxis()->SetTitleSize(0.04);
+	h1->GetXaxis()->SetLabelSize(0.05);
+	h1->GetYaxis()->SetLabelSize(0.05);
+	h1->SetTitleOffset(1.0,"X");
+	
 	h1->Draw("HIST E");
 	TH1D* h2 = (TH1D*)h_QCD->ProjectionX("QCD",0,-1,0,-1);
 	h2->Scale(1.0/h2->Integral());
@@ -162,12 +167,5 @@ void plot_3(){
 	legend->AddEntry(h_top_0,"top bkg","l");
 	legend->Draw();
 	
-	c1->SaveAs("n2b1_new.png");
-	
-	auto c2 = new TCanvas("c2","c2");
-	TH2D* h_QCD_XY = (TH2D*) h_QCD->Project3D("XY");
-	h_QCD_XY->SetXTitle("#rho");
-	h_QCD_XY->SetYTitle("N2DDT");
-	h_QCD_XY->Draw("COL");
-	c2->SaveAs("2DMAP_rho_N2ddt.png");
+	c1->SaveAs("n2b1DDT_new.png");
 }

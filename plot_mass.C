@@ -102,8 +102,13 @@ void plot_mass(){
 	TLegend* legend = new TLegend(0.7,0.7,0.9,0.9);
 	h_total->SetLineColor(kBlack);
 	h_total->Scale(1.0/h_total->Integral());
-	h_total->SetTitle("N2");
-	h_total->SetXTitle("FJetmass[GeV]");
+	h_total->SetTitle("N2 cut");
+	h_total->SetTitleSize(0.07);
+	h_total->SetXTitle("FJetMass[GeV]");
+	h_total->GetXaxis()->SetTitleSize(0.05);
+	h_total->GetXaxis()->SetLabelSize(0.05);
+	h_total->GetYaxis()->SetLabelSize(0.05);
+	
 	//h_total->SetAxisRange(0, 0.2, "Y");
 	h_total->Draw("SAME HIST");
 	legend->AddEntry(h_total,"inclusive");
@@ -118,7 +123,7 @@ void plot_mass(){
 	c1->SaveAs("n2cut_mass.png");
 	
 	auto c2 = new TCanvas("c2","c2");
-	h_total->SetTitle("N2ddt");
+	h_total->SetTitle("N2DDT cut");
 	h_total->Draw("SAME HIST");
 	for (int i=3;i>=0;i--){
 		h_n2ddt[i]->SetLineColor(kRed+i);
