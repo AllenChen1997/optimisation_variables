@@ -132,7 +132,7 @@ void Draw_and_write( vector<vector<Data>>& v, string name, vector<Double_t>& vn2
 	// c1 = n2b1 violin plot //
 	auto c1 = new TCanvas(Form("c_%s_n2b1",name.c_str()),Form("c_%s_n2b1",name.c_str()) );
 	TH1* h11 = h1->Project3D("XY");
-	h11->SetTitle(Form("%s_n2b1",name.c_str()));
+	h11->SetTitle(Form("%s\%_n2b1",name.c_str()));
 	h11->Draw("VIOLIN(03001000)");
 	dt1->Draw("* SAME");
 	//legend->Draw();
@@ -142,7 +142,7 @@ void Draw_and_write( vector<vector<Data>>& v, string name, vector<Double_t>& vn2
 	// c2 = n2b2 violin plot //
 	auto c2 = new TCanvas(Form("c_%s_n2b2",name.c_str()),Form("c_%s_n2b2",name.c_str()) );
 	TH1* h22 = h2->Project3D("XY");
-	h22->SetTitle(Form("%s_n2b2",name.c_str()));
+	h22->SetTitle(Form("%s\%_n2b2",name.c_str()));
 	h22->Draw("VIOLIN(03001000)");
 	dt2->Draw("* SAME");
 	//legend->Draw();
@@ -152,7 +152,7 @@ void Draw_and_write( vector<vector<Data>>& v, string name, vector<Double_t>& vn2
 	// c3 = n2DDT(b=1) violin plot //
 	auto c3 = new TCanvas(Form("c_%s_n2b1DDT",name.c_str()),Form("c_%s_n2b1DDT",name.c_str()) );
 	TH1* h33 = h3->Project3D("XY");
-	h33->SetTitle(Form("%s_n2b1DDT",name.c_str()));
+	h33->SetTitle(Form("%s\%_n2b1DDT",name.c_str()));
 	h33->Draw("VIOLIN(03001000)");
 	dt0->Draw("* SAME");
 	//legend->Draw();
@@ -162,7 +162,7 @@ void Draw_and_write( vector<vector<Data>>& v, string name, vector<Double_t>& vn2
 	// c4 = n2DDT(b=2) violin plot //
 	auto c4 = new TCanvas(Form("c_%s_n2b2DDT",name.c_str()),Form("c_%s_n2b2DDT",name.c_str()) );
 	TH1* h44 = h4->Project3D("XY");
-	h44->SetTitle(Form("%s_n2b2DDT",name.c_str()));
+	h44->SetTitle(Form("%s\%_n2b2DDT",name.c_str()));
 	h44->Draw("VIOLINX(03001000)");
 	dt0->Draw("* SAME");
 	//legend->Draw();
@@ -214,7 +214,7 @@ void N2_study(){
 	// prepare to output
 	TFile* fout = new TFile("TH3_output.root","NEW");
 	TTree outTree("tree","out branches");
-	outTree.Branch("n2b1_v5", &n2b1_v5);
+	outTree.Branch("n2b1_v5", &n2b1_v5); // each N% selection eff. for QCD
 	outTree.Branch("n2b2_v5", &n2b2_v5);
 	outTree.Branch("n2b1_v20", &n2b1_v20);
 	outTree.Branch("n2b2_v20", &n2b2_v20);
@@ -222,7 +222,7 @@ void N2_study(){
 	outTree.Branch("n2b2_v26", &n2b2_v26);
 	outTree.Branch("n2b1_v50", &n2b1_v50);
 	outTree.Branch("n2b2_v50", &n2b2_v50);
-	outTree.Branch("n2b1_cut", &n2b1_cut);
+	outTree.Branch("n2b1_cut", &n2b1_cut); // no seperate with rho regions
 	
 	
 	Draw_and_write(v1,"20",n2b1_v20,n2b2_v20,0.2);
