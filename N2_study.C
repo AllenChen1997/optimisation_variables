@@ -5,7 +5,7 @@
 	
 	the flow of the work:
 	1. load data to the vector: v1, v_pt1, v_pt2, v_pt3, and v_pt4 -> seperated with different rho region
-	   v_total -> no different rho region
+	   v_total -> include all rho region
 	2. run Draw_and_write() for getting n2b1 and n2b2 values in vector form
 	3. run sort_Nper() for getting n2b1 values (without seperated by rho region)
 	4. output TH3_output.root: this root file contains some violin plots and the "5, 20, 26, 50% QCD selection eff." n2b1 and n2b2 values 
@@ -24,6 +24,7 @@
 #include <TLegend.h>
 #include <TLatex.h>
 #include <TAxis.h>
+#include <functional>
 
 // the param. setting for TH3 histogram
 #define Maxpt 2000
@@ -68,14 +69,25 @@ public:
 };
 
 void sort_Nper( vector<Data>& v, vector<Double_t>& vout1){ // this is used to output N2b1 cuts
-	// n = 50,25,10,5
-	double percent[4] = {0.05,0.2,0.26,0.5};
+	double percent[4] = {0.05,0.2,0.26,0.5}; // 5, 20 ,26, 50 %
 	sort(v.begin(),v.end(),less<Data>());
 	for (int i=0;i<4;i++){
 		double num = v[round(percent[i]*v.size())].Getn2b1();
 		vout1.push_back(num);
 	}
 }
+template<typename T>
+void setDrawOpt(T& h,string title, string xTitle, string yTitle){
+	h->SetTitle(title.c_str());
+	h->SetTitleSize(0.07);
+	h->GetXaxis()->SetLabelSize(0.05);
+	h->GetXaxis()->SetTitleSize(0.05);
+	h->GetYaxis()->SetLabelSize(0.05);
+	h->GetYaxis()->SetTitleSize(0.05);
+	h->SetXTitle(xTitle.c_str());
+	h->SetYTitle(yTitle.c_str());
+}
+	
 
 void Draw_and_write( vector<vector<Data>>& v, string name, vector<Double_t>& vn2b1, vector<Double_t>& vn2b2, double Npercent ){
 // this function will write to the most current opened file
@@ -86,17 +98,9 @@ void Draw_and_write( vector<vector<Data>>& v, string name, vector<Double_t>& vn2
 	TGraph* dt0 = new TGraph();
 	
 	TH3D* h1 = new TH3D(Form("h_%s_n2b1",name.c_str()),"N2-rho-jetPt",NN2,MinN2,MaxN2, Nrho,Minrho,Maxrho, 3,0, Maxpt); // n2-rho-pt
-		h1->SetXTitle("N^{1.0}_{2}");
-		h1->SetYTitle("#rho");
-		h1->SetZTitle("jetpt");
 	TH3D* h2 = (TH3D*) h1->Clone(Form("h_%s_n2b2",name.c_str()));
-		h2->SetXTitle("N^{2.0}_{2}");
 	TH3D* h3 = new TH3D(Form("h_%s_N2b1DDT",name.c_str()),"N2ddt-rho-jetpt",NN2,MinN2,MaxN2,Nrho,Minrho,Maxrho,3,0,Maxpt);
-		h3->SetXTitle("N2DDT(N^{1.0}_{2})");
-		h3->SetYTitle("#rho");
-		h3->SetZTitle("jetPt");
 	TH3D* h4 = (TH3D*) h3->Clone(Form("h_%s_N2b2DDT",name.c_str()));
-		h4->SetXTitle("N2DDT(N^{2.0}_{2})");
 	int n=0;
 	for (int i = 0;i<v.size();i++){
 		if (v[i].empty() ) {
@@ -131,72 +135,77 @@ void Draw_and_write( vector<vector<Data>>& v, string name, vector<Double_t>& vn2
 	
 	// c1 = n2b1 violin plot //
 	auto c1 = new TCanvas(Form("c_%s_n2b1",name.c_str()),Form("c_%s_n2b1",name.c_str()) );
-	TH1* h11 = h1->Project3D("XY");
-	h11->SetTitle(Form("%s%%_n2b1",name.c_str()));
-	h11->SetTitleSize(0.07);
-	h11->GetXaxis()->SetLabelSize(0.05);
-	h11->GetXaxis()->SetTitleSize(0.05);
-	h11->GetYaxis()->SetLabelSize(0.05);
-	h11->GetYaxis()->SetTitleSize(0.05);
+	TH1* h11 = h1->Project3D("XY"); setDrawOpt(h11, name+"%_n2b1", "#rho", "N^{1.0}_{2}");
 	h11->Draw("VIOLIN(03001000)");
 	dt1->Draw("* SAME");
-	//legend->Draw();
-	//c1->Write();
 	c1->SaveAs(Form("c_%s_n2b1.png",name.c_str()) );
 	
 	// c2 = n2b2 violin plot //
 	auto c2 = new TCanvas(Form("c_%s_n2b2",name.c_str()),Form("c_%s_n2b2",name.c_str()) );
-	TH1* h22 = h2->Project3D("XY");
-	h22->SetTitle(Form("%s%%_n2b2",name.c_str()));
-	h22->SetTitleSize(0.07);
-	h22->GetXaxis()->SetLabelSize(0.05);
-	h22->GetXaxis()->SetTitleSize(0.05);
-	h22->GetYaxis()->SetLabelSize(0.05);
-	h22->GetYaxis()->SetTitleSize(0.05);
+	TH1* h22 = h2->Project3D("XY"); setDrawOpt(h22, name+"%_n2b2", "#rho", "N^{2.0}_{2}");
 	h22->Draw("VIOLIN(03001000)");
 	dt2->Draw("* SAME");
-	//legend->Draw();
-	//c2->Write();
 	c2->SaveAs(Form("c_%s_n2b2.png",name.c_str()) );
 	
-	// c3 = n2DDT(b=1) violin plot //
+	// c3 = n2DDT(b=1) violin plot //		
 	auto c3 = new TCanvas(Form("c_%s_n2b1DDT",name.c_str()),Form("c_%s_n2b1DDT",name.c_str()),800,500 );
-	TH1* h33 = h3->Project3D("XY");
-	h33->SetTitle(Form("%s%%_n2b1DDT",name.c_str()));
-	h33->SetTitleSize(0.07);
-	h33->GetXaxis()->SetLabelSize(0.05);
-	h33->GetXaxis()->SetTitleSize(0.05);
-	h33->GetYaxis()->SetLabelSize(0.05);
-	h33->GetYaxis()->SetTitleSize(0.05);
+	TH1* h33 = h3->Project3D("XY"); setDrawOpt(h33, name+"%_n2b1DDT", "#rho", "N2DDT(N^{1.0}_{2})");
 	h33->Draw("VIOLIN(03001000)");
 	dt0->Draw("* SAME");
-	//legend->Draw();
-	//c3->Write();
 	c3->SaveAs(Form("c_%s_n2b1DDT.png",name.c_str()) );
 	
 	// c4 = n2DDT(b=2) violin plot //
 	auto c4 = new TCanvas(Form("c_%s_n2b2DDT",name.c_str()),Form("c_%s_n2b2DDT",name.c_str()),800,500 );
-	TH1* h44 = h4->Project3D("XY");
-	h44->SetTitle(Form("%s%%_n2b2DDT",name.c_str()));
-	h44->SetTitleSize(0.07);
-	h44->GetXaxis()->SetLabelSize(0.05);
-	h44->GetXaxis()->SetTitleSize(0.05);
-	h44->GetYaxis()->SetLabelSize(0.05);
-	h44->GetYaxis()->SetTitleSize(0.05);
+	TH1* h44 = h4->Project3D("XY"); setDrawOpt(h44, name+"%_n2b2DDT", "#rho", "N2DDT(N^{2.0}_{2})");
 	h44->Draw("VIOLINX(03001000)");
 	dt0->Draw("* SAME");
-	//legend->Draw();
-	//c4->Write();
 	c4->SaveAs(Form("c_%s_n2b2DDT.png",name.c_str()) );
+}
+
+TH2F* getRhoPt(int num, vector< vector< Data> > v_pt1, vector< vector< Data> > v_pt2, vector< vector< Data> > v_pt3, vector< vector< Data> > v_pt4){
+	vector< Double_t > v_for_no_used,v_for_no_used_2;// just for call the function
+	TH2D* h_pt_rho = new TH2D(Form("h_pt_rho_%i",num ),"",Nrho,Minrho,Maxrho,4,200,1000);
+	string name = to_string(num);
+	Draw_and_write(v_pt1,"pt200to400_"+name,v_for_no_used,v_for_no_used_2,num*0.01);
+	for (int i=0;i<v_for_no_used.size();i++){
+		if (v_for_no_used[i] == -1) continue;
+		h_pt_rho->SetBinContent(i+1,1,v_for_no_used[i]);
+	}
+	v_for_no_used.clear(); v_for_no_used_2.clear();
+	Draw_and_write(v_pt2,"pt400to600_"+name,v_for_no_used,v_for_no_used_2,num*0.01);
+	for (int i=0;i<v_for_no_used.size();i++){
+		if (v_for_no_used[i] == -1) continue;
+		h_pt_rho->SetBinContent(i+1,2,v_for_no_used[i]);
+	}
+	v_for_no_used.clear(); v_for_no_used_2.clear();
+	Draw_and_write(v_pt3,"pt600to800_"+name,v_for_no_used,v_for_no_used_2,num*0.01);
+	for (int i=0;i<v_for_no_used.size();i++){
+		if (v_for_no_used[i] == -1) continue;
+		h_pt_rho->SetBinContent(i+1,3,v_for_no_used[i]);
+	}
+	v_for_no_used.clear(); v_for_no_used_2.clear();
+	Draw_and_write(v_pt4,"ptOver800_"+name,v_for_no_used,v_for_no_used_2,num*0.01);
+	for (int i=0;i<v_for_no_used.size();i++){
+		if (v_for_no_used[i] == -1) continue;
+		h_pt_rho->SetBinContent(i+1,4,v_for_no_used[i]);
+	}
+	gStyle->SetPaintTextFormat("5.3f");
+	h_pt_rho->SetMinimum(0.2);
+	h_pt_rho->SetMaximum(0.35);
+	TCanvas* cpt = new TCanvas("cpt","cpt",800,500);
+	setDrawOpt(h_pt_rho, "", "#rho", "P_{T} (GeV)");
+	h_pt_rho->SetTitleOffset(1.0,"Y");
+	h_pt_rho->Draw("COLZ TEXT0");
+	cpt->SaveAs(Form("n2b1_rho_pt_%s.png",name.c_str() ) );
+	TH1D h_tmp = *h_pt_rho;
+	return h_tmp;
 }
 
 void N2_study(){
 	vector< vector<Data>> v1(Nrho); // used to store & sort the data in different rho region
 	vector< vector<Data>> v_pt1(Nrho),v_pt2(Nrho),v_pt3(Nrho),v_pt4(Nrho); // used to store & sort the data in different pt region
+	vector< Double_t > n2b1_v20, n2b1_v26, n2b2_v20, n2b2_v26, n2b1_cut; // the output values will put into them
 	vector< Data > v_total; // for generate N2 cut
-	vector< Double_t > n2b1_v20, n2b1_v26, n2b1_v5, n2b1_v50, n2b1_cut; // the output values will put into them
-	vector< Double_t > n2b2_v20, n2b2_v26, n2b2_v5, n2b2_v50;
-	vector< Double_t > v_for_no_used,v_for_no_used_2;// just for call the function
 	TH3D* h_n2b1 = new TH3D("h_n2b1","h_n2b1",NN2,MinN2,MaxN2, Nrho,Minrho,Maxrho, 3,0, Maxpt); // for short test
 	TH3D* h_n2b2 = (TH3D*) h_n2b1->Clone("h_n2b2");
 	// input file data
@@ -212,10 +221,12 @@ void N2_study(){
 		TTreeReaderValue< Double_t > n2b2(myRead,"FJetN2b2");
 		TTreeReaderValue< Double_t > rho(myRead,"FJetrho");
 		TTreeReaderValue< Double_t > pt(myRead,"FJetPt");
+		TTreeReaderValue< Double_t > mass(myRead,"FJetMass");
 		int N = myRead.GetEntries(); //get the number entires info.
 		if (N == 0) continue;
 		i++;
 		while (myRead.Next()){  // loop in one root file
+			if (*mass < 30) continue;
 			v_total.push_back(Data(*n2b1,*n2b2,*rho,*pt));
 			if (*rho > Maxrho || *rho < Minrho) continue;
 			int region_rho = floor((double)(*rho - Minrho) / d ); // use this to decide the data in which rho region 
@@ -234,60 +245,20 @@ void N2_study(){
 	// prepare to output
 	TFile* fout = new TFile("TH3_output.root","NEW");
 	TTree outTree("tree","out branches");
-	outTree.Branch("n2b1_v5", &n2b1_v5); // each N% selection eff. for QCD
-	outTree.Branch("n2b2_v5", &n2b2_v5);
 	outTree.Branch("n2b1_v20", &n2b1_v20);
 	outTree.Branch("n2b2_v20", &n2b2_v20);
 	outTree.Branch("n2b1_v26", &n2b1_v26);
 	outTree.Branch("n2b2_v26", &n2b2_v26);
-	outTree.Branch("n2b1_v50", &n2b1_v50);
-	outTree.Branch("n2b2_v50", &n2b2_v50);
 	outTree.Branch("n2b1_cut", &n2b1_cut); // no seperate with rho regions
-	
-	
 	Draw_and_write(v1,"20",n2b1_v20,n2b2_v20,0.2);
 	Draw_and_write(v1,"26",n2b1_v26,n2b2_v26,0.26);
-	Draw_and_write(v1,"5",n2b1_v5,n2b2_v5,0.05);
-	Draw_and_write(v1,"50",n2b1_v50,n2b2_v50,0.5);
 	// for the diff-pt-regions //
-	TH2D* h_pt_rho = new TH2D("h_pt_rho","",Nrho,Minrho,Maxrho,4,200,1000);
-	Draw_and_write(v_pt1,"pt200to400",v_for_no_used,v_for_no_used_2,0.26);
-	for (int i=0;i<v_for_no_used.size();i++){
-		if (v_for_no_used[i] == -1) continue;
-		h_pt_rho->SetBinContent(i+1,1,v_for_no_used[i]);
-	}
-	v_for_no_used.clear(); v_for_no_used_2.clear();
-	Draw_and_write(v_pt2,"pt400to600",v_for_no_used,v_for_no_used_2,0.26);
-	for (int i=0;i<v_for_no_used.size();i++){
-		if (v_for_no_used[i] == -1) continue;
-		h_pt_rho->SetBinContent(i+1,2,v_for_no_used[i]);
-	}
-	v_for_no_used.clear(); v_for_no_used_2.clear();
-	Draw_and_write(v_pt3,"pt600to800",v_for_no_used,v_for_no_used_2,0.26);
-	for (int i=0;i<v_for_no_used.size();i++){
-		if (v_for_no_used[i] == -1) continue;
-		h_pt_rho->SetBinContent(i+1,3,v_for_no_used[i]);
-	}
-	v_for_no_used.clear(); v_for_no_used_2.clear();
-	Draw_and_write(v_pt4,"ptOver800",v_for_no_used,v_for_no_used_2,0.26);
-	for (int i=0;i<v_for_no_used.size();i++){
-		if (v_for_no_used[i] == -1) continue;
-		h_pt_rho->SetBinContent(i+1,4,v_for_no_used[i]);
-	}
-	gStyle->SetPaintTextFormat("5.3f");
-	h_pt_rho->SetMinimum(0.2);
-	h_pt_rho->SetMaximum(0.35);
-	TCanvas* cpt = new TCanvas("cpt","cpt",800,500);
-	h_pt_rho->SetXTitle("#rho");
-	h_pt_rho->GetXaxis()->SetTitleSize(0.05);
-	h_pt_rho->GetXaxis()->SetLabelSize(0.05);
-	h_pt_rho->SetYTitle("P_{T} (GeV)");
-	h_pt_rho->GetYaxis()->SetTitleSize(0.05);
-	h_pt_rho->GetYaxis()->SetLabelSize(0.05);
-	h_pt_rho->SetTitleOffset(1.0,"Y");
-	h_pt_rho->Draw("COLZ TEXT0");
-	cpt->SaveAs("n2b1_rho_pt.png");
-	// get different N2b1 cut
+		TH2D* h_rho_pt_5 = getRhoPt(5,v_pt1,v_pt2,v_pt3,v_pt4);
+		TH2D* h_rho_pt_20 = getRhoPt(20,v_pt1,v_pt2,v_pt3,v_pt4);
+		TH2D* h_rho_pt_26 = getRhoPt(26,v_pt1,v_pt2,v_pt3,v_pt4);
+		TH2D* h_rho_pt_50 = getRhoPt(50,v_pt1,v_pt2,v_pt3,v_pt4);
+
+	// get different N2b1 cut //
 	sort_Nper(v_total,n2b1_cut);
 	
 	outTree.Fill();
