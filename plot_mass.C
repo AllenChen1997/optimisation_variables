@@ -28,9 +28,18 @@
 #define NMass 40
 #define MinMass 100
 #define MaxMass 500
+
+#define pt_r1 200
+#define pt_r2 400
+#define pt_r3 600
+#define pt_r4 800
 //
 using namespace std;
-vector<double> v5,v20,v26,v50,v_cut;
+vector<double> v_cut;
+TH2D* h_5;
+TH2D* h_20;
+TH2D* h_26;
+TH2D* h_50;
 TH1D* h_n2[4];
 TH1D* h_n2ddt[4];
 TH1D* h_total = new TH1D("","h_total",NMass,MinMass,MaxMass);
@@ -40,16 +49,25 @@ void load_to_hist(string s){
 	TTreeReaderValue< Double_t > n2b1(finRead,"FJetN2b1");
 	TTreeReaderValue< Double_t > rho(finRead,"FJetrho");
 	TTreeReaderValue< Double_t > mass(finRead,"FJetMass");
+	TTreeReaderValue< Double_t > pt(finRead,"FJetPt");
 	while(finRead.Next()){
 		// for N2 cut //
+		int x = -1;
+		int y = -1;
 		if (*rho > Maxrho || *rho < Minrho) {
-			for(int i=0;i<4;i++) h_n2ddt[i]->Fill(*mass);
+			//for(int i=0;i<4;i++) h_n2ddt[i]->Fill(*mass);
+			continue;
 		} else {
-			int rho_region = floor((double)(*rho - Minrho) / d );
-			if (*n2b1 - v5[rho_region] < 0) h_n2ddt[0]->Fill(*mass);
-			if (*n2b1 - v20[rho_region] < 0) h_n2ddt[1]->Fill(*mass);
-			if (*n2b1 - v26[rho_region] < 0) h_n2ddt[2]->Fill(*mass);
-			if (*n2b1 - v50[rho_region] < 0) h_n2ddt[3]->Fill(*mass);
+			x = ceil((double)(*rho - Minrho) / d );
+			if (*pt >= pt_r1 && *pt < pt_r2 ) y = 1;
+			else if (*pt >= pt_r2 && *pt < pt_r3) y = 2;
+			else if (*pt >= pt_r3 && *pt < pt_r4) y = 3;
+			else if (*pt >= pt_r4) y = 4;
+			else continue;
+			if (*n2b1 - h_5->GetBinContent(x,y) < 0) h_n2ddt[0]->Fill(*mass);
+			if (*n2b1 - h_20->GetBinContent(x,y) < 0) h_n2ddt[1]->Fill(*mass);
+			if (*n2b1 - h_26->GetBinContent(x,y) < 0) h_n2ddt[2]->Fill(*mass);
+			if (*n2b1 - h_50->GetBinContent(x,y) < 0) h_n2ddt[3]->Fill(*mass);
 		}
 		h_total->Fill(*mass);
 		for (int i=0;i<4;i++){
@@ -68,16 +86,12 @@ void plot_mass(){
 	
 	TFile* myfile = new TFile("TH3_output.root","READ");
 	TTreeReader myRead("tree",myfile);  
-	TTreeReaderValue<vector<double>> n2b1_5(myRead,"n2b1_v5");
-	TTreeReaderValue<vector<double>> n2b1_20(myRead,"n2b1_v20");
-	TTreeReaderValue<vector<double>> n2b1_26(myRead,"n2b1_v26");
-	TTreeReaderValue<vector<double>> n2b1_50(myRead,"n2b1_v50");
 	TTreeReaderValue<vector<double>> n2b1_cut(myRead,"n2b1_cut");
+	h_5 = (TH2D*) myfile->Get("h_pt_rho_5");
+	h_20 = (TH2D*) myfile->Get("h_pt_rho_20");
+	h_26 = (TH2D*) myfile->Get("h_pt_rho_26");
+	h_50 = (TH2D*) myfile->Get("h_pt_rho_50");
 	while(myRead.Next()){		
-		for (auto x : *n2b1_5) v5.push_back(x);
-		for (auto x : *n2b1_20) v20.push_back(x);
-		for (auto x : *n2b1_26) v26.push_back(x);
-		for (auto x : *n2b1_50) v50.push_back(x);
 		for (auto x : *n2b1_cut) v_cut.push_back(x);
 	}
 
