@@ -21,7 +21,7 @@
 #include <TLatex.h>
 #include <TAxis.h>
 
-#define NN 13 //the number of input files
+#define NN 7 //the number of input files
 
 using namespace std;
 void plot(){
