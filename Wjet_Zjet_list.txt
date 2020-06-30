@@ -1,0 +1,14 @@
+crab_WJetsToLNu_HT-100to200.root 1395.0
+crab_WJetsToLNu_HT-1200to2500.root 1.074
+crab_WJetsToLNu_HT-200to400.root 407.9
+crab_WJetsToLNu_HT-2500toInf.root 0.008001
+crab_WJetsToLNu_HT-400to600.root 57.48
+crab_WJetsToLNu_HT-600to800.root 12.87
+crab_WJetsToLNu_HT-800to1200.root 5.366
+crab_ZJetsToNuNu_HT-100to200.root 280.35
+crab_ZJetsToNuNu_HT-1200to2500.root 0.28833
+crab_ZJetsToNuNu_HT-200to400.root 77.67
+crab_ZJetsToNuNu_HT-2500toInf.root 0.006945
+crab_ZJetsToNuNu_HT-400to600.root 10.73
+crab_ZJetsToNuNu_HT-600to800.root 2.559
+crab_ZJetsToNuNu_HT-800to1200.root 0.28833
