@@ -39,7 +39,8 @@ string tt_had = filesdir+"crab_TTToHadronic_TuneCP5_PSweights_13TeV-powheg-pythi
 string s1 = "h_pt_rho_20";
 double d = (double)(Maxrho-Minrho)/(double)Nrho; 
 
-bool ischangemode = false;
+bool isN2DDTintuple = false;
+bool isScanSignal = true;  string scanfileName = "signal_list.txt";
 // the top sample xs:
 #define semi 308.9
 #define LL 78.5
@@ -64,7 +65,7 @@ void load_to_hist_bkg(string s, TH2D* h , double& count, double& N, double xsbkg
 		if (*ddb < 0.86 ) continue;
 		if (*nj > 2) continue;
 		N+=1;
-		if (ischangemode) {
+		if (isN2DDTintuple) {
 			if (*N2DDT < 0 ) count+=1;
 		} else {
 			if (*rho < Minrho ||*rho > Maxrho) continue;
@@ -104,7 +105,7 @@ void load_to_hist_signal(string s, TH2D* h , double& count, double& N, double& N
 		if (*nj > 2) continue;
 		if (*rho < Minrho ||*rho > Maxrho) continue;
 		N+=1;
-		if (ischangemode) {
+		if (isN2DDTintuple) {
 			if (*N2DDT < 0) count+=1;
 		} else{
 			int x = ceil((double)(*rho - Minrho) / d );
@@ -120,7 +121,7 @@ void load_to_hist_signal(string s, TH2D* h , double& count, double& N, double& N
 	TH1F* h_event = (TH1F*) myfile->Get("h_total");
 	N_origin = h_event->Integral();
 }
-void cal_n2b1_3(){
+void run_(){
 	TFile* myfile = new TFile("TH3_output.root","READ");
 	TH2D* h_pt_rho = (TH2D*) myfile->Get(s1.c_str());
 
@@ -146,7 +147,6 @@ void cal_n2b1_3(){
 	load_to_hist_signal(sig_root,h_pt_rho,count=0,N=0,N_origin); // xs = 0, used to show it is signal in code
 	eff_s = (double) count / (double) N_origin;	
 	eff_s_origin = (double) N / (double) N_origin;
-	
 	// top //
 	double eff=0;
 	load_to_hist_bkg(tt_semi,h_pt_rho,count=0,N=0,semi);
@@ -177,7 +177,22 @@ void cal_n2b1_3(){
 
 	double puzi = eff_s / (double)(1+TMath::Sqrt(count_bkg) );
 	double puzi_origin = eff_s_origin / (double)(1+TMath::Sqrt(N_bkg) ) ;
-	cout << "puzi significance: " <<endl;
-	cout << "befor N2DDT " << puzi_origin << endl;
-	cout << "after N2DDT " << puzi <<endl;
+	ofstream ofile("punzi_result.txt",ios::app);
+	ofile << "signal is: " << sig_root << endl;
+	ofile << "puzi significance: " <<endl;
+	ofile << "befor N2DDT " << puzi_origin << endl;
+	ofile << "after N2DDT " << puzi <<endl;
 }
+
+void cal_n2b1_3(){
+	if (isScanSignal){
+		ifstream infile(scanfileName.c_str());
+		while (getline(infile,sig_root)){
+			run_();
+		}
+	} else {
+			run_();
+	}
+	
+}
+		
