@@ -115,7 +115,7 @@ void plot(){
 		}
 	}
 	TAxis* xaxis1 = h1[m]->GetXaxis();
-	xaxis1->SetTitle("N_{2}^{1.0}");
+	xaxis1->SetTitle("N_2(beta=1)");
 	xaxis1->SetTitleSize(0.04);
 	xaxis1->SetLabelSize(0.05);
 	h1[m]->SetTitleOffset(1.1,"X");
@@ -143,7 +143,7 @@ void plot(){
 		}
 	}
 	TAxis* xaxis2 = h2[m]->GetXaxis();
-	xaxis2->SetTitle("N_{2}^{2.0}");
+	xaxis2->SetTitle("N_2(beta=2)");
 	xaxis2->SetTitleSize(0.04);
 	xaxis2->SetLabelSize(0.05);
 	h2[m]->SetTitleOffset(1.1,"X");

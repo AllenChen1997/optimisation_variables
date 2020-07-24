@@ -34,12 +34,12 @@
 #define Nrho 20
 #define Minrho -6
 #define Maxrho -1
-// pt bin region [200, 400, 600, 800]
+// pt bin region [200, 400, 600, 800, inf]
 #define pt_r1 200
 #define pt_r2 400
 #define pt_r3 600
 #define pt_r4 800
-#define Npt 3
+#define Npt 4
 using namespace std;
 
 double d = (double) (Maxrho - Minrho) / (double)Nrho;  // this is the width of the rho bin
@@ -162,7 +162,7 @@ void Draw_and_write( vector<vector<Data>>& v, string name, vector<Double_t>& vn2
 	c4->SaveAs(Form("c_%s_n2b2DDT.png",name.c_str()) );
 }
 
-TH2F* getRhoPt(int num, vector< vector< Data> > v_pt1, vector< vector< Data> > v_pt2, vector< vector< Data> > v_pt3, vector< vector< Data> > v_pt4){
+TH2D* getRhoPt(int num, vector< vector< Data> > v_pt1, vector< vector< Data> > v_pt2, vector< vector< Data> > v_pt3, vector< vector< Data> > v_pt4){
 	vector< Double_t > v_for_no_used,v_for_no_used_2;// just for call the function
 	TH2D* h_pt_rho = new TH2D(Form("h_pt_rho_%i",num ),"",Nrho,Minrho,Maxrho,4,200,1000);
 	string name = to_string(num);
@@ -192,13 +192,13 @@ TH2F* getRhoPt(int num, vector< vector< Data> > v_pt1, vector< vector< Data> > v
 	gStyle->SetPaintTextFormat("5.3f");
 	h_pt_rho->SetMinimum(0.2);
 	h_pt_rho->SetMaximum(0.35);
+	h_pt_rho->SetMarkerSize(1.6);
 	TCanvas* cpt = new TCanvas("cpt","cpt",800,500);
 	setDrawOpt(h_pt_rho, "", "#rho", "P_{T} (GeV)");
 	h_pt_rho->SetTitleOffset(1.0,"Y");
-	h_pt_rho->Draw("COLZ TEXT0");
+	h_pt_rho->Draw("COLZ TEXT45");
 	cpt->SaveAs(Form("n2b1_rho_pt_%s.png",name.c_str() ) );
-	TH1D h_tmp = *h_pt_rho;
-	return h_tmp;
+	return h_pt_rho;
 }
 
 void N2_study(){

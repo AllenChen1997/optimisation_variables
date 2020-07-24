@@ -20,7 +20,8 @@
 // make sure the variables are the same in the N2_study.C
 #define Maxpt 2000
 #define NN2 28
-#define MinN2 -0.2
+//#define MinN2 -0.2
+#define MinN2 0
 #define MaxN2 0.5
 #define Nrho 20
 #define Minrho -6
@@ -49,8 +50,17 @@ void load_to_hist(string s, TH1D* h, TH2D* h_cut, double& count, double& N, doub
 	TTreeReaderValue< Double_t > n2b2(myRead,"FJetN2b2");
 	TTreeReaderValue< Double_t > rho(myRead,"FJetrho");
 	TTreeReaderValue< Double_t > pt(myRead,"FJetPt");
+	TTreeReaderValue< Double_t > dphi(myRead,"min_dPhi");
+	TTreeReaderValue< Double_t > ddb(myRead,"FJetCSV");
+	TTreeReaderValue< Double_t > nj(myRead,"nJets");
+	TTreeReaderValue< Double_t > mass(myRead,"FJetMass");
 	double width = (double) (Maxrho -Minrho) / (double) Nrho;
 	while (myRead.Next()){  // loop in one root file
+		/*if (*dphi < 0.4 ) continue;
+		if (*mass < 100 || *mass > 150) continue;
+		if (*ddb < 0.86 ) continue;
+		if (*nj > 2) continue;*/
+		N+=1;
 		if (*rho < Minrho ||*rho > Maxrho) continue;
 		int x = ceil((double)(*rho - Minrho) / d );
 		int y;
@@ -61,9 +71,10 @@ void load_to_hist(string s, TH1D* h, TH2D* h_cut, double& count, double& N, doub
 		else continue;
 		double n_cut = h_cut->GetBinContent(x,y);
 		if (n_cut == 0) continue;
-		h->Fill(*n2b1-n_cut);
+		//h->Fill(*n2b1-n_cut);
+		h->Fill(*n2b2);
 		if ( *n2b1-n_cut < 0 ) count+=1;
-		N+=1;
+
 	}
 	cout << "N " <<N << " count " << count << endl;
 	
@@ -138,7 +149,7 @@ void plot_3(){
 	
 	auto c1 = new TCanvas("c1","c1");
 	h_sig->Scale(1.0/h_sig->Integral());
-	h_sig->SetXTitle("N_{2}^{DDT}(N_{2}^{1.0})");
+	h_sig->SetXTitle("N_2(beta=2))");
 	h_sig->SetTitle("");
 	h_sig->SetLineColor(kRed);
 	h_sig->GetXaxis()->SetTitleSize(0.04);
@@ -153,11 +164,12 @@ void plot_3(){
 	h_top[0]->SetLineColor(kBlack);
 	h_top[0]->Draw("SAME HIST E");
 	
-	TLegend* legend = new TLegend(0.7,0.7,0.9,0.9);
+	//TLegend* legend = new TLegend(0.7,0.7,0.9,0.9);
+	TLegend* legend = new TLegend(0.8,0.7,1.0,0.9);
 	legend->AddEntry(h_sig,"signal","l");
 	legend->AddEntry(h_QCD,"QCD bkg","l");
 	legend->AddEntry(h_top[0],"top bkg","l");
 	legend->Draw();
 	
-	c1->SaveAs("n2b1DDT_new.png");
+	c1->SaveAs("n2b2_new.png");
 }
