@@ -33,7 +33,7 @@ using namespace std;
 string filesdir = "/afs/cern.ch/work/k/kuchen/public/samples/";
 string sig_root= filesdir+"EXO-ggToXdXdHToBB_sinp_0p35_tanb_1p0_mXd_10_MH3_1000_MH4_150_MH2_1000_MHC_1000_CP3Tune_13TeV.root";
 string n2ddtweight = "h_pt_rho_26";
-bool isN2DDTintuple = false; string fN2weight = "TH3_output_top.root";
+bool isN2DDTintuple = false; string fN2weight = "TH3_output.root";
 bool isScanSignal = true;  string scanfileName = "signal_list.txt";
 void run_();
 void cal_n2b1_3(){
