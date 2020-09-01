@@ -9,13 +9,15 @@
 #include <TTree.h>
 #include <TMath.h>
 #include <TFile.h>
-#include <TH3D.h>
+#include <TH2D.h>
 #include <TROOT.h>
 #include <TCanvas.h>
 #include <TLegend.h>
 #include <TLatex.h>
 #include <TAxis.h> 
 #include <TLine.h>
+#include <TTreeReader.h>
+#include <TTreeReaderArray.h>
 // make sure the variables are the same in the N2_study.C
 #define Maxpt 2000
 #define NN2 20
@@ -61,7 +63,7 @@ void load_to_hist_bkg(string s , TH2D* h){
 		if (fj_mass[0] < 100 || fj_mass[0] > 150) continue;
 		int nAk4 = 0; // this is number of additional ak4 jet
 		float mindphi; // this is mim dphi of MET and ak4
-		for (int i=0; i<*ntj;i++){
+		for (int i=0; i<(int)*ntj;i++){
 			float dphi = fj_phi[0]-Jet_phi[i];
 			float deta = fj_eta[0]-Jet_eta[i];
 			float dR = TMath::Sqrt(dphi*dphi + deta*deta);
@@ -82,7 +84,7 @@ void load_to_hist_bkg(string s , TH2D* h){
 	h->Add(h_tmp);
 }
 
-void correlated_plot(){
+void correlated_plot(string inputfile, string outputfile = "histo.root"){
 	double N=0, count=0;
 	double eff_s,eff_s_origin,N_origin, count_QCD=0,count_top=0,count_bkg=0,N_bkg=0;
 	TH2D* h_pNET = new TH2D("h_pNET","",NN2,0,MaxN2,Nddb,Minddb,Maxddb);
@@ -90,10 +92,13 @@ void correlated_plot(){
 	
 	// top //
 	double eff=0;
-	load_to_hist_bkg(testsample,h_pNET);
+	load_to_hist_bkg(inputfile,h_pNET);
 
-	gStyle->SetOptStat("");
-	auto c1 = new TCanvas("c1","c1");
+	//gStyle->SetOptStat("");
+	/*auto c1 = new TCanvas("c1","c1");
 	h_pNET->Draw("CANDLE");
-	c1->SaveAs("corre.png");
+	c1->SaveAs("corre.png");*/
+	TFile* fout = new TFile(outputfile.data(),"recreate");
+	h_pNET->Write();
+	fout->Close();
 }		
