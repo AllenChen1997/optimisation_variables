@@ -32,7 +32,7 @@ using namespace std;
 string testsample = "./nano_39.root";
 
 
-void load_to_hist_bkg(string s , TH2D* h){
+void load_to_hist_bkg(string s , TH2D* h,vector<float>& vD, vector<float>& vP){
 	cout << "Reading " << s << endl;
 	TFile* myfile = new TFile(s.c_str(),"READ");
 	TTreeReader myRead("Events",myfile);  
@@ -62,7 +62,7 @@ void load_to_hist_bkg(string s , TH2D* h){
 		if (fj_pt[0] < 200) continue;
 		if (fj_mass[0] < 100 || fj_mass[0] > 150) continue;
 		int nAk4 = 0; // this is number of additional ak4 jet
-		float mindphi; // this is mim dphi of MET and ak4
+		float mindphi=-1; // this is mim dphi of MET and ak4
 		for (int i=0; i<(int)*ntj;i++){
 			float dphi = fj_phi[0]-Jet_phi[i];
 			float deta = fj_eta[0]-Jet_eta[i];
@@ -78,27 +78,47 @@ void load_to_hist_bkg(string s , TH2D* h){
 		if (nAk4 > 2 ) continue;
 		if (*MET_pt < 200) continue;
 		h_tmp->Fill(pNET[0],DDB[0]);
+		vD.push_back(DDB[0]);
+		//cout << pNET[0] << endl;
+		vP.push_back(pNET[0]);
 		
 	}
 	//cout << "num " << n << endl;
 	h->Add(h_tmp);
 }
 
-void correlated_plot(string inputfile, string outputfile = "histo.root"){
-	double N=0, count=0;
-	double eff_s,eff_s_origin,N_origin, count_QCD=0,count_top=0,count_bkg=0,N_bkg=0;
+void correlated_plot(string inputfilelist, string outputfile = "histo.root"){
 	TH2D* h_pNET = new TH2D("h_pNET","",NN2,0,MaxN2,Nddb,Minddb,Maxddb);
 		h_pNET->SetYTitle("DDB"); h_pNET->SetXTitle("particleNET");
 	
-	// top //
-	double eff=0;
-	load_to_hist_bkg(inputfile,h_pNET);
-
-	//gStyle->SetOptStat("");
-	/*auto c1 = new TCanvas("c1","c1");
-	h_pNET->Draw("CANDLE");
-	c1->SaveAs("corre.png");*/
+	string line;
+	ifstream fin(inputfilelist.data());
+	vector<string> lines;
+	vector<float> DDB;
+	vector<float> PNET;
+	vector<vector<float> > vDDB;
+	vector<vector<float> > vPNET;
+	while(getline(fin,line)){
+		//cout << line << endl;
+		load_to_hist_bkg(line,h_pNET,DDB,PNET);
+		vDDB.push_back(DDB);
+		vPNET.push_back(PNET);
+		DDB.clear();
+		PNET.clear();
+		lines.push_back(line);
+	}
 	TFile* fout = new TFile(outputfile.data(),"recreate");
+	TTree ot("tree","input names");
+	ot.Branch("inputname",&line);
+	ot.Branch("DDB",&DDB);
+	ot.Branch("PNET",&PNET);
+	for (int i=0; i<(int)lines.size();i++){
+		line = lines[i];
+		DDB=vDDB[i];
+		PNET=vPNET[i];
+		ot.Fill();
+	}
 	h_pNET->Write();
+	fout->Write();
 	fout->Close();
 }		
