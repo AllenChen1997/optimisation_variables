@@ -9,118 +9,133 @@
 #include <TTree.h>
 #include <TMath.h>
 #include <TFile.h>
-#include <TH2D.h>
+#include <TH3D.h>
 #include <TROOT.h>
 #include <TCanvas.h>
 #include <TLegend.h>
 #include <TLatex.h>
 #include <TAxis.h> 
 #include <TLine.h>
-#include <TTreeReader.h>
-#include <TTreeReaderArray.h>
-#include <vector>
 // make sure the variables are the same in the N2_study.C
 #define Maxpt 2000
-#define NN2 20
-#define MinN2 0
-#define MaxN2 1
-
+#define NN2 28
+#define MinN2 -0.2
+#define MaxN2 0.5
+#define Nrho 20
+#define Minrho -6
+#define Maxrho -1
+#define pt_r1 200
+#define pt_r2 400
+#define pt_r3 600
+#define pt_r4 800
 #define Nddb 40
 #define Minddb 0
-#define Maxddb 1
+#define Maxddb 4
 //
 using namespace std;
-string testsample = "./nano_39.root";
+string filesdir = "/afs/cern.ch/work/k/kuchen/public/samples/";
+string sig_root= filesdir+"EXO-ggToXdXdHToBB_sinp_0p35_tanb_1p0_mXd_10_MH3_1000_MH4_150_MH2_1000_MHC_1000_CP3Tune_13TeV.root";
+string tt_semi= filesdir+"crab_TTToSemiLeptonic_TuneCP5_PSweights_13TeV-powheg-pythia8.root";
+string tt_LL = filesdir+"crab_TTTo2L2Nu_TuneCP5_PSweights_13TeV-powheg-pythia8.root";
+string tt_had = filesdir+"crab_TTToHadronic_TuneCP5_PSweights_13TeV-powheg-pythia8.root";
+string s1 = "h_pt_rho_20";
+double d = (double)(Maxrho-Minrho)/(double)Nrho; 
 
+// the top sample xs:
+#define semi 308.9
+#define LL 78.5
+#define hadron 303.9
+#define Lumi 41000 // 1/pb
 
-void load_to_hist_bkg(string s , TH2D* h,vector<float>& vD, vector<float>& vP){
+void load_to_hist_bkg(string s , double xsbkg, TH2D* h_n2, TH2D* h_n2ddt){
 	cout << "Reading " << s << endl;
-	TFile* myfile;
-	myfile=TFile::Open(s.data());
-	TTreeReader myRead("Events",myfile);  
-	// obs to look
-	TTreeReaderArray< Float_t > DDB(myRead,"FatJet_btagDDBvL"); 
-	TTreeReaderArray< Float_t > pNET(myRead,"FatJet_ParticleNetMD_probXbb");
-	// fat jet
-	TTreeReaderValue< UInt_t >  nfj(myRead,"nFatJet");
-	TTreeReaderArray< Float_t > fj_eta(myRead,"FatJet_eta");
-	TTreeReaderArray< Float_t > fj_phi(myRead,"FatJet_phi");
-	TTreeReaderArray< Float_t > fj_pt(myRead, "FatJet_pt");
-	TTreeReaderArray< Float_t > fj_mass(myRead, "FatJet_mass");
-	// MET
-	TTreeReaderValue< Float_t > MET_pt(myRead, "MET_pt");
-	TTreeReaderValue< Float_t > MET_phi(myRead, "MET_phi");
-	// Ak4 jet
-	TTreeReaderValue< UInt_t > ntj(myRead, "nJet");
-	TTreeReaderArray< Float_t > Jet_phi(myRead, "Jet_phi");
-	TTreeReaderArray< Float_t > Jet_eta(myRead, "Jet_eta");
-	TH2D* h_tmp = (TH2D*) h->Clone("");
-	h_tmp->Reset();
+	TFile* myfile = new TFile(s.c_str(),"READ");
+	TTreeReader myRead("monoHbb_SR_boosted",myfile);  
+	TTreeReaderValue< Double_t > n2b1(myRead,"FJetN2b1");
+	TTreeReaderValue< Double_t > rho(myRead,"FJetrho");
+	TTreeReaderValue< Double_t > pt(myRead,"FJetPt");
+	TTreeReaderValue< Double_t > dphi(myRead,"min_dPhi");
+	TTreeReaderValue< Double_t > ddb(myRead,"FJetCSV");
+	TTreeReaderValue< Double_t > nj(myRead,"nJets");
+	TTreeReaderValue< Double_t > mass(myRead,"FJetMass");
+	TTreeReaderValue< Double_t > N2DDT(myRead,"N2DDT");
+	TH2D* h_n2_tmp = (TH2D*) h_n2->Clone("");
+	TH2D* h_n2ddt_tmp = (TH2D*) h_n2ddt->Clone("");
+	h_n2_tmp->Reset(); h_n2ddt_tmp->Reset();
 	int n = 0;
 	while (myRead.Next()){  // loop in one root file
-		if (*nfj != 1) continue; // we must need only one fatjet
-		// identify fatjet
-		if (fj_eta[0] > 2.5 || fj_eta[0] < -2.5) continue;
-		if (fj_pt[0] < 200) continue;
-		if (fj_mass[0] < 100 || fj_mass[0] > 150) continue;
-		int nAk4 = 0; // this is number of additional ak4 jet
-		float mindphi=-1; // this is mim dphi of MET and ak4
-		for (int i=0; i<(int)*ntj;i++){
-			float dphi = fj_phi[0]-Jet_phi[i];
-			float deta = fj_eta[0]-Jet_eta[i];
-			float dR = TMath::Sqrt(dphi*dphi + deta*deta);
-			float dphi_met = TMath::Abs(*MET_phi-Jet_phi[i]);
-			if (dR >= 1.2) nAk4++;
-			if (i==0) mindphi = dphi_met;
-			else {
-				if (mindphi > dphi_met) mindphi = dphi_met;
-			}
-		}
-		if (mindphi < 0.4) continue;
-		if (nAk4 > 2 ) continue;
-		if (*MET_pt < 200) continue;
-		h_tmp->Fill(pNET[0],DDB[0]);
-		vD.push_back(DDB[0]);
-		//cout << pNET[0] << endl;
-		vP.push_back(pNET[0]);
+		if (*dphi < 0.4 ) continue;
+		if (*mass < 100 || *mass > 150) continue;
+		if (*ddb < 0.86 ) continue;
+		//if (*nj > 2) continue;
+		h_n2_tmp->Fill(*n2b1, *nj);
+		h_n2ddt_tmp->Fill(*N2DDT, *nj);
+		n++;
 		
 	}
-	//cout << "num " << n << endl;
-	h->Add(h_tmp);
+	cout << "num " << n << endl;
+	TH1F* h_event = (TH1F*) myfile->Get("h_total_mcweight");
+	double totalevent = h_event->Integral();
+	h_n2_tmp->Scale(xsbkg/(double)totalevent);
+	h_n2ddt_tmp->Scale(xsbkg/(double)totalevent);
+	h_n2->Add(h_n2_tmp);
+	h_n2ddt->Add(h_n2ddt_tmp);
 }
 
-void correlated_plot(string inputfilelist, string outputfile = "histo.root"){
-	TH2D* h_pNET = new TH2D("h_pNET","",NN2,0,MaxN2,Nddb,Minddb,Maxddb);
-		h_pNET->SetYTitle("DDB"); h_pNET->SetXTitle("particleNET");
+void correlated_plot(){
+	double N=0, count=0;
+	double eff_s,eff_s_origin,N_origin, count_QCD=0,count_top=0,count_bkg=0,N_bkg=0;
+	TH2D* h_top_n2 = new TH2D("h_top","top",NN2,0,MaxN2,Nddb,Minddb,Maxddb);
+		h_top_n2->SetYTitle("nj"); h_top_n2->SetXTitle("N2");
+	TH2D* h_top_n2ddt = new TH2D("h_top2","top",NN2,MinN2,MaxN2,Nddb,Minddb,Maxddb);
+		h_top_n2ddt->SetYTitle("nj"); h_top_n2ddt->SetXTitle("N2DDT");
+	TH2D* h_w_n2 = (TH2D*) h_top_n2->Clone("h_w"); h_w_n2->SetTitle("W+jet");
+	TH2D* h_w_n2ddt = (TH2D*) h_top_n2ddt->Clone("h_w2"); h_w_n2ddt->SetTitle("W+jet");
+	TH2D* h_z_n2 = (TH2D*) h_top_n2->Clone("h_z"); h_z_n2->SetTitle("Z+jet");
+	TH2D* h_z_n2ddt = (TH2D*) h_top_n2ddt->Clone("h_z2"); h_z_n2ddt->SetTitle("Z+jet");
 	
-	string line;
-	ifstream fin(inputfilelist.data());
-	vector<string> lines;
-	vector<float> DDB;
-	vector<float> PNET;
-	vector<vector<float> > vDDB;
-	vector<vector<float> > vPNET;
-	while(getline(fin,line)){
-		//cout << line << endl;
-		load_to_hist_bkg(line,h_pNET,DDB,PNET);
-		vDDB.push_back(DDB);
-		vPNET.push_back(PNET);
-		DDB.clear();
-		PNET.clear();
-		lines.push_back(line);
+	// top //
+	double eff=0;
+	load_to_hist_bkg(tt_semi,semi,h_top_n2,h_top_n2ddt);
+
+	load_to_hist_bkg(tt_LL,LL,h_top_n2,h_top_n2ddt);
+	
+	load_to_hist_bkg(tt_had,hadron,h_top_n2,h_top_n2ddt);
+	
+	gStyle->SetOptStat("");
+	auto c1 = new TCanvas("c1","c1");
+	h_top_n2->Draw("CANDLE");
+	c1->SaveAs("top_n2.png");
+	h_top_n2ddt->Draw("CANDLE");
+	c1->SaveAs("top_n2ddt.png");
+	
+	// w+jet  //
+	ifstream infile("wjet_list.txt");
+	stringstream ss;
+	string line,name;
+	double xs;
+	while(getline(infile,line)){
+		ss << line;
+		ss >> name >> xs;
+		ss.clear();
+		load_to_hist_bkg(filesdir+name,xs,h_w_n2,h_w_n2ddt);
 	}
-	TFile* fout = new TFile(outputfile.data(),"recreate");
-	TTree ot("tree","input names");
-	ot.Branch("inputname",&line);
-	ot.Branch("DDB",&DDB);
-	ot.Branch("PNET",&PNET);
-	for (int i=0; i<(int)lines.size();i++){
-		line = lines[i];
-		DDB=vDDB[i];
-		PNET=vPNET[i];
-		ot.Fill();
+	h_w_n2->Draw("CANDLE");
+	c1->SaveAs("w_n2.png");
+	h_w_n2ddt->Draw("CANDLE");
+	c1->SaveAs("w_n2ddt.png");
+	infile.close();
+
+	// z+jet //
+	infile.open("zjet_list.txt");
+	while(getline(infile,line)){
+		ss << line;
+		ss >> name >> xs;
+		ss.clear();
+		load_to_hist_bkg(filesdir+name,xs,h_z_n2,h_z_n2ddt);
 	}
-	h_pNET->Write();
-	fout->Write();
-	fout->Close();
+	h_z_n2->Draw("CANDLE");
+	c1->SaveAs("z_n2.png");
+	h_z_n2ddt->Draw("CANDLE");
+	c1->SaveAs("z_n2ddt.png");	
 }		
