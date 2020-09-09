@@ -18,6 +18,7 @@
 #include <TLine.h>
 #include <TTreeReader.h>
 #include <TTreeReaderArray.h>
+#include <vector>
 // make sure the variables are the same in the N2_study.C
 #define Maxpt 2000
 #define NN2 20
@@ -34,7 +35,8 @@ string testsample = "./nano_39.root";
 
 void load_to_hist_bkg(string s , TH2D* h,vector<float>& vD, vector<float>& vP){
 	cout << "Reading " << s << endl;
-	TFile* myfile = new TFile(s.c_str(),"READ");
+	TFile* myfile;
+	myfile=TFile::Open(s.data());
 	TTreeReader myRead("Events",myfile);  
 	// obs to look
 	TTreeReaderArray< Float_t > DDB(myRead,"FatJet_btagDDBvL"); 
