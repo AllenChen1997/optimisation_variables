@@ -54,31 +54,72 @@ void load_to_hist_bkg(string s , TH2D* h,vector<float>& vD, vector<float>& vP){
 	TTreeReaderValue< UInt_t > ntj(myRead, "nJet");
 	TTreeReaderArray< Float_t > Jet_phi(myRead, "Jet_phi");
 	TTreeReaderArray< Float_t > Jet_eta(myRead, "Jet_eta");
-	TH2D* h_tmp = (TH2D*) h->Clone("");
+	// ele
+	TTreeReaderValue< UInt_t > nEle(myRead, "nElectron");
+	TTreeReaderArray< Float_t > Ele_pt(myRead, "Electron_pt");
+	TTreeReaderArray< Float_t > Ele_eta(myRead, "Electron_eta");
+	TTreeReaderArray< Int_t > Ele_id(myRead, "Electron_cutBased"); // (0:fail, 1:veto, 2:loose, 3:medium, 4:tight)
+	// pho
+	TTreeReaderValue< UInt_t > nPho(myRead, "nPhoton");
+	TTreeReaderArray< Float_t > Pho_pt(myRead, "Photon_pt");
+	TTreeReaderArray< Float_t > Pho_eta(myRead, "Photon_eta");
+	TTreeReaderArray< Int_t > Pho_id(myRead, "Electron_cutBased"); // (0:fail, 1:loose, 2:medium, 3:tight)
+	
+	TH2D* h_tmp = (TH2D*) h->Clone(""); // for collect events from this inputfile
 	h_tmp->Reset();
 	int n = 0;
 	while (myRead.Next()){  // loop in one root file
 		if (*nfj != 1) continue; // we must need only one fatjet
-		// identify fatjet
+		
+		// identify fatjet //
 		if (fj_eta[0] > 2.5 || fj_eta[0] < -2.5) continue;
 		if (fj_pt[0] < 200) continue;
 		if (fj_mass[0] < 100 || fj_mass[0] > 150) continue;
+		
+		// additional ak4 jet test (<=2)
 		int nAk4 = 0; // this is number of additional ak4 jet
 		float mindphi=-1; // this is mim dphi of MET and ak4
 		for (int i=0; i<(int)*ntj;i++){
 			float dphi = fj_phi[0]-Jet_phi[i];
 			float deta = fj_eta[0]-Jet_eta[i];
-			float dR = TMath::Sqrt(dphi*dphi + deta*deta);
-			float dphi_met = TMath::Abs(*MET_phi-Jet_phi[i]);
+			float dR = TMath::Sqrt(dphi*dphi + deta*deta); // dR b/w fj and ak4j
+			float dphi_met_ak4 = TMath::Abs(*MET_phi-Jet_phi[i]);
 			if (dR >= 1.2) nAk4++;
-			if (i==0) mindphi = dphi_met;
+			if (i==0) mindphi = dphi_met_ak4;
 			else {
-				if (mindphi > dphi_met) mindphi = dphi_met;
+				if (mindphi > dphi_met_ak4) mindphi = dphi_met_ak4;
 			}
 		}
 		if (mindphi < 0.4) continue;
 		if (nAk4 > 2 ) continue;
 		if (*MET_pt < 200) continue;
+		
+		// ele veto //
+		bool isEle = false;
+		for (int ie=0; ie<(int)*nEle;ie++){ // loop ele
+			if (Ele_pt[ie] < 10) continue;
+			if (Ele_id[ie] != 2) continue;
+			float abs_Ele_eta = TMath::Abs(Ele_eta[ie]);
+			if (abs_Ele_eta > 2.5) continue;
+			if (abs_Ele_eta < 1.566 && abs_Ele_eta > 1.4442) continue;
+			isEle = true;
+			break;
+		} // end of loop ele
+		if (isEle) continue;
+		
+		// photon veto //
+		bool isPho = false;
+		for (int iph=0; iph<(int)*nPho;iph++){ // loop photons
+			if (Pho_pt[iph] < 15) continue;
+			if (Pho_id[iph] != 1) continue;
+			float abs_Pho_eta = TMath::Abs(Pho_eta[iph]);
+			if (abs_Pho_eta > 2.5) continue;
+			isPho = true;
+			break;
+		}// end of loop photon
+		if (isPho) continue;
+		
+		// passed all pre-selections, fill in //
 		h_tmp->Fill(pNET[0],DDB[0]);
 		vD.push_back(DDB[0]);
 		//cout << pNET[0] << endl;
