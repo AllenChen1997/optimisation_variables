@@ -54,6 +54,8 @@ void load_to_hist_bkg(string s , TH2D* h,vector<float>& vD, vector<float>& vP){
 	TTreeReaderValue< UInt_t > ntj(myRead, "nJet");
 	TTreeReaderArray< Float_t > Jet_phi(myRead, "Jet_phi");
 	TTreeReaderArray< Float_t > Jet_eta(myRead, "Jet_eta");
+	TTreeReaderArray< Float_t > Jet_pt(myRead, "Jet_pt");
+	TTreeReaderArray< Int_t > Jet_id(myRead, "Jet_jetId"); // (1:loose, 3:loose+tight, 7:loose+tight+tightLepVeto)
 	// ele
 	TTreeReaderValue< UInt_t > nEle(myRead, "nElectron");
 	TTreeReaderArray< Float_t > Ele_pt(myRead, "Electron_pt");
@@ -69,30 +71,40 @@ void load_to_hist_bkg(string s , TH2D* h,vector<float>& vD, vector<float>& vP){
 	h_tmp->Reset();
 	int n = 0;
 	while (myRead.Next()){  // loop in one root file
-		if (*nfj != 1) continue; // we must need only one fatjet
-		
+		//if (*nfj != 1) continue; // we must need only one fatjet
+		vector<int> fjpassID;
 		// identify fatjet //
-		if (fj_eta[0] > 2.5 || fj_eta[0] < -2.5) continue;
-		if (fj_pt[0] < 200) continue;
-		if (fj_mass[0] < 100 || fj_mass[0] > 150) continue;
+		for (int i=0; i<(int)*nfj; i++){ // loop of fj
+			if (TMath::Abs(fj_eta[i]) >= 2.5) continue;
+			if (fj_pt[i] <= 200) continue;
+			if (fj_mass[i] < 100 || fj_mass[i] > 150) continue;
+			fjpassID.push_back(i);
+		} // end loop of fj
+		if (fjpassID.size() != 1) continue; // only remains one fj can be used
+		int fjID = fjpassID[0];
 		
-		// additional ak4 jet test (<=2)
 		int nAk4 = 0; // this is number of additional ak4 jet
-		float mindphi=-1; // this is mim dphi of MET and ak4
-		for (int i=0; i<(int)*ntj;i++){
-			float dphi = fj_phi[0]-Jet_phi[i];
-			float deta = fj_eta[0]-Jet_eta[i];
+		float mindphi=-1; // this is mim dphi b/w MET and ak4
+		for (int i=0; i<(int)*ntj;i++){ // loop all ak4jet
+			// basic identify 
+			if (Jet_pt[i] <= 30) continue;
+			if (TMath::Abs(Jet_eta[i]) >= 4.5) continue;
+			if (Jet_id[i] != 1) continue;
+			// additional ak4 jet test (<=2)
+			float dphi = fj_phi[fjID]-Jet_phi[i];
+			float deta = fj_eta[fjID]-Jet_eta[i];
 			float dR = TMath::Sqrt(dphi*dphi + deta*deta); // dR b/w fj and ak4j
-			float dphi_met_ak4 = TMath::Abs(*MET_phi-Jet_phi[i]);
 			if (dR >= 1.2) nAk4++;
-			if (i==0) mindphi = dphi_met_ak4;
+			// min dphi b/w MET and ak4jet
+			float dphi_met_ak4 = TMath::Abs(*MET_phi-Jet_phi[i]);
+			if (mindphi == -1) mindphi = dphi_met_ak4;
 			else {
 				if (mindphi > dphi_met_ak4) mindphi = dphi_met_ak4;
 			}
 		}
-		if (mindphi < 0.4) continue;
+		if (mindphi <= 0.4) continue;
 		if (nAk4 > 2 ) continue;
-		if (*MET_pt < 200) continue;
+		if (*MET_pt <= 200) continue;
 		
 		// ele veto //
 		bool isEle = false;
