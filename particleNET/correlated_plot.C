@@ -10,6 +10,7 @@
 #include <TMath.h>
 #include <TFile.h>
 #include <TH2D.h>
+#include <TH1F.h>
 #include <TROOT.h>
 #include <TCanvas.h>
 #include <TLegend.h>
@@ -33,7 +34,7 @@ using namespace std;
 string testsample = "./nano_39.root";
 
 
-void load_to_hist_bkg(string s , TH2D* h,vector<float>& vD, vector<float>& vP){
+void load_to_hist_bkg(string s , TH2D* h, TH1F* h_cut,vector<float>& vD, vector<float>& vP){
 	cout << "Reading " << s << endl;
 	TFile* myfile;
 	myfile=TFile::Open(s.data());
@@ -66,11 +67,18 @@ void load_to_hist_bkg(string s , TH2D* h,vector<float>& vD, vector<float>& vP){
 	TTreeReaderArray< Float_t > Pho_pt(myRead, "Photon_pt");
 	TTreeReaderArray< Float_t > Pho_eta(myRead, "Photon_eta");
 	TTreeReaderArray< Int_t > Pho_id(myRead, "Photon_cutBased"); // (0:fail, 1:loose, 2:medium, 3:tight)
+	int total_entry = myRead.GetEntries();
+	cout << "total entries = " << total_entry << endl;
 	
 	TH2D* h_tmp = (TH2D*) h->Clone(""); // for collect events from this inputfile
 	h_tmp->Reset();
-	int n = 0;
-	while (myRead.Next()){  // loop in one root file
+	TH1F* h_cut_tmp = (TH1F*) h_cut->Clone("");
+	h_cut_tmp->Reset();
+	int n = 0; // ientry
+	while (myRead.Next()){  // loop all entries
+		n++;
+		h_cut_tmp->Fill(0); // 1st bin: incl
+		if (n%5000 == 0) cout << "running " << n << " / " << total_entry << endl;
 		//if (*nfj != 1) continue; // we must need only one fatjet
 		vector<int> fjpassID;
 		// identify fatjet //
@@ -81,6 +89,7 @@ void load_to_hist_bkg(string s , TH2D* h,vector<float>& vD, vector<float>& vP){
 			fjpassID.push_back(i);
 		} // end loop of fj
 		if (fjpassID.size() != 1) continue; // only remains one fj can be used
+		h_cut_tmp->Fill(1); // 2nd bin: pass fj_sel
 		int fjID = fjpassID[0];
 		
 		int nAk4 = 0; // this is number of additional ak4 jet
@@ -103,8 +112,11 @@ void load_to_hist_bkg(string s , TH2D* h,vector<float>& vD, vector<float>& vP){
 			}
 		}
 		if (mindphi <= 0.4) continue;
+			h_cut_tmp->Fill(2); // 3rd bin: pass mindphi
 		if (nAk4 > 2 ) continue;
+			h_cut_tmp->Fill(3); // 4th bin: pass additional_ak4
 		if (*MET_pt <= 200) continue;
+			h_cut_tmp->Fill(4); // 5th bin: pass MET_pt
 		
 		// ele veto //
 		bool isEle = false;
@@ -118,7 +130,7 @@ void load_to_hist_bkg(string s , TH2D* h,vector<float>& vD, vector<float>& vP){
 			break;
 		} // end of loop ele
 		if (isEle) continue;
-		
+			h_cut_tmp->Fill(5); // 6th bin: pass ele_veto
 		// photon veto //
 		bool isPho = false;
 		for (int iph=0; iph<(int)*nPho;iph++){ // loop photons
@@ -130,22 +142,25 @@ void load_to_hist_bkg(string s , TH2D* h,vector<float>& vD, vector<float>& vP){
 			break;
 		}// end of loop photon
 		if (isPho) continue;
-		
+		h_cut_tmp->Fill(6); // 7th bin: pass photon veto
 		// passed all pre-selections, fill in //
 		h_tmp->Fill(pNET[0],DDB[0]);
 		vD.push_back(DDB[0]);
-		//cout << pNET[0] << endl;
 		vP.push_back(pNET[0]);
 		
-	}
-	//cout << "num " << n << endl;
+	} // end loop all entries in one file
 	h->Add(h_tmp);
+	h_cut->Add(h_cut_tmp);
 }
 
 void correlated_plot(string inputfilelist, string outputfile = "histo.root"){
 	TH2D* h_pNET = new TH2D("h_pNET","",NN2,0,MaxN2,Nddb,Minddb,Maxddb);
 		h_pNET->SetYTitle("DDB"); h_pNET->SetXTitle("particleNET");
-	
+	TH1F* h_cut_flow = new TH1F("h_cut_flow","",7,0,7); // incl, fJ_sel, mindphi, Additional_Ak4, MET_pt, ele_veto, photon_veto
+	string labels[7] = {"incl","fJ_sel","mindphi","Add_Ak4","MET_pt","ele_veto","pho_veto"};
+	for (int i=0; i<(int)(sizeof(labels)/sizeof(labels[0]) ); i++){
+		h_cut_flow->GetXaxis()->SetBinLabel(i+1,labels[i].data());
+	}
 	string line;
 	ifstream fin(inputfilelist.data());
 	vector<string> lines;
@@ -153,15 +168,15 @@ void correlated_plot(string inputfilelist, string outputfile = "histo.root"){
 	vector<float> PNET;
 	vector<vector<float> > vDDB;
 	vector<vector<float> > vPNET;
-	while(getline(fin,line)){
-		//cout << line << endl;
-		load_to_hist_bkg(line,h_pNET,DDB,PNET);
+	while(getline(fin,line)){ // read the text file
+		load_to_hist_bkg(line,h_pNET,h_cut_flow,DDB,PNET);
 		vDDB.push_back(DDB);
 		vPNET.push_back(PNET);
 		DDB.clear();
 		PNET.clear();
 		lines.push_back(line);
 	}
+	// set up the output //
 	TFile* fout = new TFile(outputfile.data(),"recreate");
 	TTree ot("tree","input names");
 	ot.Branch("inputname",&line);
@@ -174,6 +189,7 @@ void correlated_plot(string inputfilelist, string outputfile = "histo.root"){
 		ot.Fill();
 	}
 	h_pNET->Write();
+	h_cut_flow->Write();
 	fout->Write();
 	fout->Close();
 }		
