@@ -67,7 +67,7 @@ void load_to_hist_bkg(string s , TH2D* h, TH1F* h_cut,vector<float>& vD, vector<
 	TTreeReaderArray< Float_t > Pho_pt(myRead, "Photon_pt");
 	TTreeReaderArray< Float_t > Pho_eta(myRead, "Photon_eta");
 	TTreeReaderArray< Int_t > Pho_id(myRead, "Photon_cutBased"); // (0:fail, 1:loose, 2:medium, 3:tight)
-	int total_entry = myRead.GetEntries();
+	int total_entry = myRead.GetEntries(true);
 	cout << "total entries = " << total_entry << endl;
 	
 	TH2D* h_tmp = (TH2D*) h->Clone(""); // for collect events from this inputfile
