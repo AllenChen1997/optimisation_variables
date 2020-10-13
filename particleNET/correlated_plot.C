@@ -31,6 +31,8 @@
 
 using namespace std;
 
+int region = 1; // 1 for SingleL_B, 2 for SBand_B . 2 not yet done
+
 void load_to_hist_bkg(string s , TH2D* h, TH1F* h_cut,vector<float>& vD, vector<float>& vP){
 	cout << "Reading " << s << endl;
 	TFile* myfile;
@@ -39,6 +41,11 @@ void load_to_hist_bkg(string s , TH2D* h, TH1F* h_cut,vector<float>& vD, vector<
 	// var. in tree to read //
 	TTreeReaderArray< Float_t > DDB(myRead,"FatJet_btagDDBvL"); 
 	TTreeReaderArray< Float_t > pNET(myRead,"FatJet_ParticleNetMD_probXbb");
+	// genpart // used to filter out the TTToSemilep. events
+	TTreeReaderValue< UInt_t > nPar(myRead,"nGenPart");
+	TTreeReaderArray< Int_t > Par_status(myRead,"GenPart_status");
+	TTreeReaderArray< Int_t > Par_pid(myRead,"GenPart_pdgId");
+	TTreeReaderArray< Int_t > Par_motherid(myRead,"GenPart_genPartIdxMother");
 	// fat jet
 	TTreeReaderValue< UInt_t >  nfj(myRead,"nFatJet");
 	TTreeReaderArray< Float_t > fj_eta(myRead,"FatJet_eta");
@@ -112,10 +119,26 @@ void load_to_hist_bkg(string s , TH2D* h, TH1F* h_cut,vector<float>& vD, vector<
 	TH1F* h_cut_tmp = (TH1F*) h_cut->Clone("");
 	h_cut_tmp->Reset();
 	int n = 0; // ientry
+	int nNotW = 0;
 	while (myRead.Next()){  // loop all entries
 		n++;
-		h_cut_tmp->Fill(0); // 1st bin: incl
 		if (n%5000 == 0) cout << "running " << n << " / " << total_entry << endl;
+		h_cut_tmp->Fill(0); // 1st bin: total
+		// filter out TTToSemilep. events
+		int nlep = 0;
+		for (int ip=0; ip<(int)*nPar; ip++){
+			if (Par_status[ip] == 23){  // focus on the daugter
+				int abspid = TMath::Abs(Par_pid[ip]);
+				if ( abspid == 11 || abspid == 13 || abspid == 15 ){
+					nlep++;
+					if (TMath::Abs( Par_pid[Par_motherid[ip] ] ) != 24) {
+						nNotW++;
+					}
+				}
+			}
+		}
+		if (nlep != 1) continue;
+		h_cut_tmp->Fill(1); // 2nd bin: TTToSemi
 		
 		// ele loose id //
 		vector<int> passEleId;
@@ -181,7 +204,6 @@ void load_to_hist_bkg(string s , TH2D* h, TH1F* h_cut,vector<float>& vD, vector<
 			if (noEle && noMu) passTauId_AgainstLep.push_back(x);
 		}
 			
-		
 		// photon //
 		vector<int> passPhoId;
 		for (int iph=0; iph<(int)*nPho;iph++){ // loop photons
@@ -264,7 +286,7 @@ void load_to_hist_bkg(string s , TH2D* h, TH1F* h_cut,vector<float>& vD, vector<
 		}
 		
 		if (! METState && ! ZRecoilState && ! WRecoilState && ! GammaRecoilState) continue; // if all false, fail pre-selection
-		h_cut_tmp->Fill(1); // 2nd bin: pass pre-selection
+		h_cut_tmp->Fill(2); // 3rd bin: pass pre-selection
 		
 		// trigger states //
 			//bool MET_triggerState = (*HLT_PFMETNoMu120_PFMHTNoMu120_IDTight_PFHT60 || *HLT_PFMETNoMu120_PFMHTNoMu120_IDTight || *HLT_PFMETNoMu140_PFMHTNoMu140_IDTight);
@@ -274,25 +296,45 @@ void load_to_hist_bkg(string s , TH2D* h, TH1F* h_cut,vector<float>& vD, vector<
 		bool Ele_triggerState = *HLT_Ele32_eta2p1_WPTight_Gsf;
 		// no muon trigger now, we use MET trigger for muon CR
 		if (! MET_triggerState) continue;  // for SBregion
-		h_cut_tmp->Fill(2); // 3nd bin: trigger
+		h_cut_tmp->Fill(3); // 4th bin: trigger
 		
-		// lep
-			//if (passEleId.size() != 0 || passMuId.size() != 0) continue;
-		if (passLooseMuId.size() != 1 || passTightMuId.size() != 1 ) continue; // for h_topmunu_CR
-		h_cut_tmp->Fill(3); // 4th bin: lep. (muon)
+		switch (region){
+			case 1:
+				// lep
+				if (passLooseMuId.size() != 1 || passTightMuId.size() != 1 ) continue; // for h_topmunu_CR
+				h_cut_tmp->Fill(4); // 5th bin: lep. (muon)
 		
-		// lep veto  
-		if (passTauId_AgainstLep.size() > 0 || passEleId.size() > 0 ) continue;
-		h_cut_tmp->Fill(4); // 5th bin: lep. veto
-		
-		// recoil
-		if (WmuRecoil <= 200) continue;
-		h_cut_tmp->Fill(5); // 6th bin: recoil
-		
-		// MET
-		if (*MET_pt <= 50) continue;
-		h_cut_tmp->Fill(6); // 7th bin: MET
-		
+				// lep veto  
+				if (passTauId_AgainstLep.size() > 0 || passEleId.size() > 0 ) continue;
+				h_cut_tmp->Fill(5); // 6th bin: lep. veto
+			
+				// recoil
+				if (WmuRecoil <= 200) continue;
+				h_cut_tmp->Fill(6); // 7th bin: recoil
+				
+				// MET
+				if (*MET_pt <= 50) continue;
+				h_cut_tmp->Fill(7); // 8th bin: MET
+				break;
+			case 2:
+				// lepVeto
+				if (passEleId.size() > 0 || passLooseMuId.size() > 0) continue;
+				h_cut_tmp->Fill(4); // 5th bin(region2) 
+				
+				// tauVeto
+				if (passTauId_AgainstLep.size() > 0) continue;
+				h_cut_tmp->Fill(5); // 6th bin (region2)
+				
+				// nPho
+				if (passPhoId.size() > 0) continue;
+				h_cut_tmp->Fill(6); // 7th bin(region2)
+				
+				// MET
+				if (*MET_pt <= 200) continue;
+				h_cut_tmp->Fill(7); // 8th bin(region2)
+				break;
+		}
+			
 		// identify fatjet //
 		vector<int> fjpassID;
 		for (int i=0; i<(int)*nfj; i++){ // loop of fj
@@ -303,7 +345,7 @@ void load_to_hist_bkg(string s , TH2D* h, TH1F* h_cut,vector<float>& vD, vector<
 		} // end loop of fj
 		if (fjpassID.size() != 1) continue; // only remains one fj can be used
 		int fjID = fjpassID[0];
-		h_cut_tmp->Fill(7); // 8th bin: nFJet
+		h_cut_tmp->Fill(8); // 9th bin: nFJet
 		
 		// identify thinjet //
 		int nAk4 = 0; // this is number of additional ak4 jet
@@ -356,7 +398,7 @@ void load_to_hist_bkg(string s , TH2D* h, TH1F* h_cut,vector<float>& vD, vector<
 			if (Jet_ddb[i] > 0.1522 && TMath::Abs(Jet_eta[i]) < 2.5 ) nBjets_iso++;
 		}
 		if (nBjets_iso != 1) continue;
-		h_cut_tmp->Fill(8); // 9th bin: nBjets
+		h_cut_tmp->Fill(9); // 10th bin: nBjets
 		
 		/* tmp no used cut
 		if (mindphi != -1) { // if mindphi == -1, it means there is no ak4 jet pass basic cuts
@@ -374,13 +416,14 @@ void load_to_hist_bkg(string s , TH2D* h, TH1F* h_cut,vector<float>& vD, vector<
 	} // end loop all entries in one file
 	h->Add(h_tmp);
 	h_cut->Add(h_cut_tmp);
+	cout << "nNotW = " << nNotW << endl;
 }
 
 void correlated_plot(string inputfilelist, string outputfile = "histo.root"){
 	TH2D* h_pNET = new TH2D("h_pNET","",NN2,0,MaxN2,Nddb,Minddb,Maxddb);
 		h_pNET->SetYTitle("DDB"); h_pNET->SetXTitle("particleNET");
 	TH1F* h_cut_flow = new TH1F("h_cut_flow","",10,0,10); // incl, fJ_sel, mindphi, Additional_Ak4, MET_pt, ele_veto, photon_veto
-	string labels[10] = {"Total","preselection","trigger","lep","lepVeto","Recoil","MET","nJets","nBjets","Mbb"};
+	string labels[10] = {"Total","TTToSemi","preselection","trigger","lep","lepVeto","Recoil","MET","nJets","nBjets"};
 	for (int i=0; i<(int)(sizeof(labels)/sizeof(labels[0]) ); i++){
 		h_cut_flow->GetXaxis()->SetBinLabel(i+1,labels[i].data());
 	}
