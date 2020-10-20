@@ -125,21 +125,21 @@ void load_to_hist_bkg(string s , TH2D* h, TH1F* h_cut, TH1F* h_filter,vector<flo
 		h_cut_tmp->Fill(0); // 1st bin: total
 		h_filter_tmp->Fill(0); // 1st bin: total
 		// filter out TTToSemilep. events
-		int nlep = 0;
+		int nhad = 0;
 		for (int ip=0; ip<(int)*nPar; ip++){
 			if (Par_status[ip] == 23){  // focus on the daugter
-				int abspid = TMath::Abs(Par_pid[ip]);
-				if ( abspid == 11 || abspid == 13 || abspid == 15 ){
-					nlep++;
-					if (TMath::Abs( Par_pid[Par_motherid[ip] ] ) != 24) {
-						nNotW++;
+				if (Par_motherid[ip] < 0 ) continue;
+				if (TMath::Abs( Par_pid[Par_motherid[ip] ] ) == 24) {
+					int abspid = TMath::Abs(Par_pid[ip]);
+					if ( abspid >= 1 && abspid <= 5 ){
+						nhad++;
 					}
 				}
 			}
 		}
-		if (nlep == 2) h_filter_tmp->Fill(2); // 3rd bin: TTTolep
-		else if (nlep == 0) h_filter_tmp->Fill(3); // 4th bin : TTTohad. 
-		if (nlep != 1) continue;
+		if (nhad == 0) h_filter_tmp->Fill(2); // 3rd bin: TTTolep
+		else if (nhad == 4) h_filter_tmp->Fill(3); // 4th bin : TTTohad. 
+		if (nhad != 2) continue;
 		h_filter_tmp->Fill(1); // 2nd bin: TTToSemi
 		
 		// ele loose id //
