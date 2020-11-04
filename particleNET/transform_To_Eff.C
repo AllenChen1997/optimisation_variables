@@ -4,11 +4,13 @@
 #include <TFile.h>
 #include <TH1F.h>
 #include <TCanvas.h>
+#include <TLegend.h>
+#include <THStack.h>
 
 using namespace std;
 
-bool noBin1InH1 = true;
-
+bool noBin1InH1 = false;
+bool printall = true;
 TH1F* geth(string inputname, string histoname){
 	TFile* fin;
 	fin = TFile::Open(inputname.data() );
@@ -38,12 +40,18 @@ TH1F* geth_eff(TH1F*h, int Nbins){
 	return h_eff;
 }
 
-void transform_To_Eff(string input1, string histo1, string input2 = "", string histo2 = "", string outputname = "", bool printall = true){ // if only input1 and histo1 is ok
+void transform_To_Eff(string input1, string histo1, string input2 = "", string histo2 = "", string input3 = "", string histo3 = "", string outputname = "", string legendname1 = "",string legendname2 = "", string legendname3 = "" ){ // if only input1 and histo1 is ok
 	bool notEmpty = false;
+	bool notEmpty2 = false;
 	if (input2 != "") notEmpty = true;
+	if (input3 != "") notEmpty2 = true;
 	TH1F* h1 = geth(input1, histo1); // original cut Flow histo in input1
 	TH1F* h2;
-	if (notEmpty) h2 = geth(input2, histo2); // original cut Flow histo in input2
+	TH1F* h3;
+	if (notEmpty){
+		h2 = geth(input2, histo2); // original cut Flow histo in input2
+		if (notEmpty2) h3 = geth(input3, histo3);
+	}
 	int Nbin = h1->GetNbinsX();
 	if (noBin1InH1) {
 		h1 = copyh(h1,2,Nbin);
@@ -51,41 +59,52 @@ void transform_To_Eff(string input1, string histo1, string input2 = "", string h
 	}
 	if (notEmpty){ 
 		if (Nbin < h2->GetNbinsX() ) Nbin = h2->GetNbinsX(); // comparing which one has more bins
+		if (notEmpty2) {
+			if (Nbin < h3->GetNbinsX() ) Nbin = h3->GetNbinsX();
+		}
 	}
 	TH1F* h_eff1 = geth_eff(h1, Nbin);
 	TH1F* h_eff2;
-	if (notEmpty) h_eff2 = geth_eff(h2, Nbin);
+	TH1F* h_eff3;
+	if (notEmpty) {
+		h_eff2 = geth_eff(h2, Nbin);
+		if (notEmpty2) h_eff3 = geth_eff(h3, Nbin);
+	}
 	
 	gStyle->SetOptStat("");
 	TCanvas* c0 = new TCanvas("c0","c0");
+	TLegend* l0 = new TLegend(0.7,0.7,0.9,0.9);
 	c0->SetLogy();
+	THStack* hs0 = new THStack("hs0","");
+	hs0->Add(h1);
+	l0->AddEntry(h1,legendname1.data(),"l");
 	if (notEmpty){
 		h2->SetLineColor(kRed);
-		if (h1->GetMaximum() > h2->GetMaximum() ){
-			h1->Draw();
-			h2->Draw("SAME");
-		} else {
-			h2->Draw();
-			h1->Draw("SAME");
+		l0->AddEntry(h2,legendname2.data(),"l");
+		hs0->Add(h2);
+		if (notEmpty2){
+			h3->SetLineColor(kGreen);
+			l0->AddEntry(h3,legendname3.data(),"l");
+			hs0->Add(h3);
 		}
-	} else {
-		h1->Draw();
 	}
+	hs0->Draw("nostack");
+	if (legendname1 != "") l0->Draw();
 	c0->SaveAs(Form("%s_cutFlow.png",outputname.data() ) );
 	
 	TCanvas* c1 = new TCanvas("c1","c1");
+	THStack* hs1 = new THStack("hs1","");
+	hs1->Add(h_eff1);
 	if (notEmpty) {
 		h_eff2->SetLineColor(kRed);
-		if (h_eff1->GetMaximum() > h_eff2->GetMaximum() ) {
-			h_eff1->Draw();
-			h_eff2->Draw("SAME");
-		} else {
-			h_eff2->Draw();
-			h_eff1->Draw("SAME");
+		hs1->Add(h_eff2);
+		if (notEmpty2){
+			h_eff3->SetLineColor(kGreen);
+			hs1->Add(h_eff3);
 		}
-	} else {
-		h_eff1->Draw();
 	}
+	hs1->Draw("nostack");
+	if (legendname1 != "") l0->Draw();
 	c1->SaveAs(Form("%s_eff.png",outputname.data() ) );
 	
 	// print out eff and eff error in screen
@@ -109,6 +128,16 @@ void transform_To_Eff(string input1, string histo1, string input2 = "", string h
 			cout << endl;
 			for (int i=1; i<Nbin; i++){
 				cout << h_eff2->GetBinError(i) << "      ";
+			}
+			cout << endl;
+		}
+		if (notEmpty2) {
+			for (int i=1; i<Nbin; i++){
+				cout << h_eff3->GetBinContent(i) << "     ";
+			}
+			cout << endl;
+			for (int i=1; i<Nbin; i++){
+				cout << h_eff3->GetBinError(i) << "      ";
 			}
 			cout << endl;
 		}
