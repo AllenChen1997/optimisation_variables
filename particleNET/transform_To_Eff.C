@@ -7,6 +7,7 @@
 #include <TLegend.h>
 #include <THStack.h>
 
+#define showsinN 5 // this is used when printall is true
 using namespace std;
 
 bool noBin1InH1 = false;
@@ -111,35 +112,43 @@ void transform_To_Eff(string input1, string histo1, string input2 = "", string h
 	if (printall){
 		cout << "print out sel. eff. and errors" << endl;
 		cout << "-----------------------------" << endl;
-		for (int i=1; i<Nbin; i++) cout << "bin" << i << "  |  ";
-		cout << endl;
+		// check the label name length
+		int s_size = 0;
 		for (int i=1; i<Nbin; i++){
-			cout << h_eff1->GetBinContent(i) << "     ";
+			string s_name = h1->GetXaxis()->GetBinLabel(i);
+			if (s_name.size() > s_size) s_size = s_name.size();
 		}
-		cout << endl;
-		for (int i=1; i<Nbin; i++){
-			cout << h_eff1->GetBinError(i) << "      ";
-		}
-		cout << endl;
-		if (notEmpty) {
-			for (int i=1; i<Nbin; i++){
-				cout << h_eff2->GetBinContent(i) << "     ";
-			}
+		// print them per 5 bins
+		int k = 0;
+		int N;
+		while (k>=0){
+			if (showsinN*k < Nbin) N = showsinN;
+			else N = showsinN*k - Nbin;
+			for (int i=1; i<=N; i++) cout << setw(s_size) << h1->GetXaxis()->GetBinLabel(i+showsinN*k) << " | ";
 			cout << endl;
-			for (int i=1; i<Nbin; i++){
-				cout << h_eff2->GetBinError(i) << "      ";
-			}
+			
+			for (int i=1; i<=N; i++)	cout << setw(s_size) << h_eff1->GetBinContent(i+showsinN*k) << "   ";
 			cout << endl;
-		}
-		if (notEmpty2) {
-			for (int i=1; i<Nbin; i++){
-				cout << h_eff3->GetBinContent(i) << "     ";
-			}
+			
+			for (int i=1; i<=N; i++)	cout << setw(s_size) << h_eff1->GetBinError(i+showsinN*k) << "   ";
 			cout << endl;
-			for (int i=1; i<Nbin; i++){
-				cout << h_eff3->GetBinError(i) << "      ";
+			
+			if (notEmpty) {
+				for (int i=1; i<=N; i++)	cout << setw(s_size) << h_eff2->GetBinContent(i+showsinN*k) << "   ";
+				cout << endl;
+				
+				for (int i=1; i<=N; i++)	cout << setw(s_size) << h_eff2->GetBinError(i+showsinN*k) << "   ";
+				cout << endl;
 			}
-			cout << endl;
+			if (notEmpty2) {
+				for (int i=1; i<=N; i++)	cout << setw(s_size) << h_eff3->GetBinContent(i+showsinN*k) << "   ";
+				cout << endl;
+				
+				for (int i=1; i<=N; i++)	cout << setw(s_size) << h_eff3->GetBinError(i+showsinN*k) << "   ";
+				cout << endl;
+			}
+			if (N<5) break;
+			else k++;
 		}
 	}
 }	
