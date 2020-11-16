@@ -31,9 +31,9 @@
 
 using namespace std;
 
-int region = 1; // 1 for SingleL_B, 2 for SBand_B . 2 not yet done
+int region = 1; // 1 for SingleL_B, 2 for SBand_B, 3 for boosted_SR . 2 not yet done
 
-void load_to_hist_bkg(string s , TH2D* h, TH1F* h_cut, TH1F* h_filter,vector<float>& vD, vector<float>& vP){
+void load_to_hist_bkg(string s , TH2D* h, TH1F* h_cut, TH1F* h_filter,vector<float>& vD, vector<float>& vP, TH1F* h_test_pre){
 	cout << "Reading " << s << endl;
 	TFile* myfile;
 	myfile=TFile::Open(s.data());
@@ -85,7 +85,8 @@ void load_to_hist_bkg(string s , TH2D* h, TH1F* h_cut, TH1F* h_filter,vector<flo
 	TTreeReaderArray< Float_t > Mu_phi(myRead, "Muon_phi");
 	TTreeReaderArray< Bool_t > Mu_looseid(myRead, "Muon_looseId");
 	TTreeReaderArray< Bool_t > Mu_tightid(myRead, "Muon_tightId");
-	TTreeReaderArray< UChar_t > Mu_isoid(myRead, "Muon_miniIsoId");// (1=MiniIsoLoose, 2=MiniIsoMedium, 3=MiniIsoTight, 4=MiniIsoVeryTight)
+	//TTreeReaderArray< UChar_t > Mu_isoid(myRead, "Muon_miniIsoId");// (1=MiniIsoLoose, 2=MiniIsoMedium, 3=MiniIsoTight, 4=MiniIsoVeryTight)
+	TTreeReaderArray< UChar_t > Mu_pfisoid(myRead, "Muon_pfIsoId");// PFIso ID from miniAOD selector (1=PFIsoVeryLoose, 2=PFIsoLoose, 3=PFIsoMedium, 4=PFIsoTight, 5=PFIsoVeryTight, 6=PFIsoVeryVeryTight)
 	// tau
 	TTreeReaderValue< UInt_t > nTau(myRead, "nTau");
 	TTreeReaderArray< Float_t > Tau_eta(myRead, "Tau_eta");
@@ -117,12 +118,12 @@ void load_to_hist_bkg(string s , TH2D* h, TH1F* h_cut, TH1F* h_filter,vector<flo
 	h_tmp->Reset();
 	TH1F* h_cut_tmp = (TH1F*) h_cut->Clone("");	h_cut_tmp->Reset();
 	TH1F* h_filter_tmp = (TH1F*) h_filter->Clone(""); h_filter_tmp->Reset();
+	TH1F* h_nleps_test = new TH1F("h_nleps_test","",10,0,10);
 	int n = 0; // ientry
 	int nNotW = 0;
 	while (myRead.Next()){  // loop all entries
 		n++;
 		if (n%5000 == 0) cout << "running " << n << " / " << total_entry << endl;
-		h_cut_tmp->Fill(0); // 1st bin: total
 		h_filter_tmp->Fill(0); // 1st bin: total
 		// filter out TTToSemilep. events
 		int nhad = 0;
@@ -141,7 +142,8 @@ void load_to_hist_bkg(string s , TH2D* h, TH1F* h_cut, TH1F* h_filter,vector<flo
 		else if (nhad == 4) h_filter_tmp->Fill(3); // 4th bin : TTTohad. 
 		if (nhad != 2) continue;
 		h_filter_tmp->Fill(1); // 2nd bin: TTToSemi
-		
+		h_cut_tmp->Fill(0); // 1st bin: total
+
 		// ele loose id //
 		vector<int> passEleId;
 		for (int ie=0; ie<(int)*nEle;ie++){ // loop ele
@@ -160,13 +162,15 @@ void load_to_hist_bkg(string s , TH2D* h, TH1F* h_cut, TH1F* h_filter,vector<flo
 			if (Mu_pt[imu] <= 10) continue;
 			if (TMath::Abs(Mu_eta[imu]) >= 2.4 ) continue;
 			if (! Mu_looseid[imu]) continue;
-			if (Mu_isoid[imu] < 1) continue;
+			if (Mu_pfisoid[imu] < 2) continue;
 				passLooseMuId.push_back(imu);
 			if (! Mu_tightid[imu]) continue;
-			if (Mu_isoid[imu] < 3) continue;
+			if (Mu_pfisoid[imu] < 4) continue;
+			if (Mu_pt[imu] <= 30) continue;
 				passTightMuId.push_back(imu);
 		} // end of loop muon
-		
+				h_nleps_test->Fill(passLooseMuId.size());
+
 		// identify tau //
 		vector<int> passTauId;
 		vector<int> passTauId_AgainstLep;
@@ -286,6 +290,15 @@ void load_to_hist_bkg(string s , TH2D* h, TH1F* h_cut, TH1F* h_filter,vector<flo
 			float Recoilpt = TMath::Sqrt(Recoilpx*Recoilpx + Recoilpy*Recoilpy);
 			if (Recoilpt > 180) GammaRecoilState = true;
 		}
+		if (METState) h_test_pre->Fill(0);
+		else h_test_pre->Fill(1);
+		if (ZRecoilState) h_test_pre->Fill(2);
+		else h_test_pre->Fill(3);
+		if (WRecoilState) h_test_pre->Fill(4);
+		else h_test_pre->Fill(5);
+		if (GammaRecoilState) h_test_pre->Fill(6);
+		else h_test_pre->Fill(7);
+		
 		
 		if (! METState && ! ZRecoilState && ! WRecoilState && ! GammaRecoilState) continue; // if all false, fail pre-selection
 		h_cut_tmp->Fill(1); // 2rd bin: pass pre-selection
@@ -300,43 +313,6 @@ void load_to_hist_bkg(string s , TH2D* h, TH1F* h_cut, TH1F* h_filter,vector<flo
 		if (! MET_triggerState) continue;  // for SBregion
 		h_cut_tmp->Fill(2); // 3th bin: trigger
 		
-		switch (region){
-			case 1:
-				// lep
-				if (passLooseMuId.size() != 1 || passTightMuId.size() != 1 ) continue; // for h_topmunu_CR
-				h_cut_tmp->Fill(3); // 4th bin: lep. (muon)
-		
-				// lep veto  
-				if (passTauId_AgainstLep.size() > 0 || passEleId.size() > 0 ) continue;
-				h_cut_tmp->Fill(4); // 5th bin: lep. veto
-			
-				// recoil
-				if (WmuRecoil <= 200) continue;
-				h_cut_tmp->Fill(5); // 6th bin: recoil
-				
-				// MET
-				if (*MET_pt <= 50) continue;
-				h_cut_tmp->Fill(6); // 7th bin: MET
-				break;
-			case 2:
-				// lepVeto
-				if (passEleId.size() > 0 || passLooseMuId.size() > 0) continue;
-				h_cut_tmp->Fill(3); // 4th bin(region2) 
-				
-				// tauVeto
-				if (passTauId_AgainstLep.size() > 0) continue;
-				h_cut_tmp->Fill(4); // 5th bin (region2)
-				
-				// nPho
-				if (passPhoId.size() > 0) continue;
-				h_cut_tmp->Fill(5); // 6th bin(region2)
-				
-				// MET
-				if (*MET_pt <= 200) continue;
-				h_cut_tmp->Fill(6); // 7th bin(region2)
-				break;
-		}
-			
 		// identify fatjet //
 		vector<int> fjpassID;
 		for (int i=0; i<(int)*nfj; i++){ // loop of fj
@@ -345,14 +321,12 @@ void load_to_hist_bkg(string s , TH2D* h, TH1F* h_cut, TH1F* h_filter,vector<flo
 			if (fj_mass[i] < 100 || fj_mass[i] > 150) continue;
 			fjpassID.push_back(i);
 		} // end loop of fj
-		if (fjpassID.size() != 1) continue; // only remains one fj can be used
-		int fjID = fjpassID[0];
-		h_cut_tmp->Fill(7); // 8th bin: nFJet
 		
 		// identify thinjet //
 		int nAk4 = 0; // this is number of additional ak4 jet
 		int nBjets_iso = 0; // count for jets pass btagDeepB
 		float mindphi=-1; // this is mim dphi b/w MET and ak4
+		float dr_FJ_ThinJ = -1; // this is only checked when nFatJet = 1
 		for (int i=0; i<(int)*ntj;i++){ // loop all ak4jet
 			// basic identify ak4 jet //
 			if (Jet_pt[i] <= 30) continue;
@@ -386,10 +360,13 @@ void load_to_hist_bkg(string s , TH2D* h, TH1F* h_cut, TH1F* h_filter,vector<flo
 			}
 			if (! noMu) continue;
 			// additional ak4 jet test (<=2)
-			float dphi = fj_phi[fjID]-Jet_phi[i];
-			float deta = fj_eta[fjID]-Jet_eta[i];
-			float dR = TMath::Sqrt(dphi*dphi + deta*deta); // dR b/w fj and ak4j
-			if (dR >= 1.2) nAk4++;
+			if (fjpassID.size() == 1){
+				int fjID = fjpassID[0];
+				float dphi = fj_phi[fjID]-Jet_phi[i];
+				float deta = fj_eta[fjID]-Jet_eta[i];
+				float dR = TMath::Sqrt(dphi*dphi + deta*deta); // dR b/w fj and ak4j
+				if (dR >= 1.2) nAk4++;
+			}
 			// min dphi b/w MET and ak4jet
 			float dphi_met_ak4 = TMath::Abs(*MET_phi-Jet_phi[i]);
 			if (mindphi == -1) mindphi = dphi_met_ak4;
@@ -398,18 +375,63 @@ void load_to_hist_bkg(string s , TH2D* h, TH1F* h_cut, TH1F* h_filter,vector<flo
 			}
 			// btagDeepB
 			if (Jet_ddb[i] > 0.1522 && TMath::Abs(Jet_eta[i]) < 2.5 ) nBjets_iso++;
-		}
-		if (nBjets_iso != 1) continue;
-		h_cut_tmp->Fill(8); // 9th bin: nBjets
-		h_cut_tmp->Fill(9); // 10th bin: Mbb
+		} // end of identify thinJet
 		
-		/* tmp no used cut
-		if (mindphi != -1) { // if mindphi == -1, it means there is no ak4 jet pass basic cuts
-			if (mindphi <= 0.4) continue;
-		}
-		if (nAk4 > 2 ) continue;		
-		*/
+		switch (region){
+			case 1: //boosted singleL_top_mu
+				// lep
+				if (passLooseMuId.size() != 1 || passTightMuId.size() != 1 ) continue; // for h_topmunu_CR
+				h_cut_tmp->Fill(3); // 4th bin: lep. (muon)
 		
+				// lep veto  
+				if (passTauId_AgainstLep.size() > 0 || passEleId.size() > 0 ) continue;
+				h_cut_tmp->Fill(4); // 5th bin: lep. veto
+			
+				// recoil
+				if (WmuRecoil <= 200) continue;
+				h_cut_tmp->Fill(5); // 6th bin: recoil
+				
+				// MET
+				if (*MET_pt <= 50) continue;
+				h_cut_tmp->Fill(6); // 7th bin: MET
+				
+				if (fjpassID.size() != 1) continue; // only remains one fj can be used
+				h_cut_tmp->Fill(7); // 8th bin: nFJet
+				
+				if (nBjets_iso != 1) continue;
+				h_cut_tmp->Fill(8); // 9th bin: nBjets
+				h_cut_tmp->Fill(9); // 10th bin: Mbb
+				break;
+			case 2: //boosted SBand
+				// lepVeto
+				if (passEleId.size() > 0 || passLooseMuId.size() > 0) continue;
+				h_cut_tmp->Fill(3); // 4th bin(region2) 
+				
+				// tauVeto
+				if (passTauId_AgainstLep.size() > 0) continue;
+				h_cut_tmp->Fill(4); // 5th bin (region2)
+				
+				// nPho
+				if (passPhoId.size() > 0) continue;
+				h_cut_tmp->Fill(5); // 6th bin(region2)
+				
+				// MET
+				if (*MET_pt <= 200) continue;
+				h_cut_tmp->Fill(6); // 7th bin(region2)
+				break;
+			case 3: // boosted SR
+				if (*MET_pt <= 200) continue;
+				if (passTauId_AgainstLep.size() > 0) continue;
+				if (passPhoId.size() > 0 ) continue;
+				if (passEleId.size() > 0 ) continue;
+				if (passLooseMuId.size() > 0) continue;
+				if (mindphi != -1) { // if mindphi == -1, it means there is no ak4 jet pass basic cuts
+					if (mindphi <= 0.4) continue;
+				}
+				if (nAk4 > 2 ) continue;
+				if (fjpassID.size() != 1) continue;
+				break;
+		}
 		
 		// passed all pre-selections, fill in //
 		h_tmp->Fill(pNET[0],DDB[0]);
@@ -417,6 +439,7 @@ void load_to_hist_bkg(string s , TH2D* h, TH1F* h_cut, TH1F* h_filter,vector<flo
 		vP.push_back(pNET[0]);
 		
 	} // end loop all entries in one file
+	h_nleps_test->Draw();
 	h->Add(h_tmp);
 	h_cut->Add(h_cut_tmp);
 	h_filter->Add(h_filter_tmp);
@@ -428,13 +451,18 @@ void correlated_plot(string inputfilelist, string outputfile = "histo.root"){
 		h_pNET->SetYTitle("DDB"); h_pNET->SetXTitle("particleNET");
 	TH1F* h_cut_flow = new TH1F("h_cut_flow","",10,0,10); // incl, fJ_sel, mindphi, Additional_Ak4, MET_pt, ele_veto, photon_veto
 	TH1F* h_TT_filter = new TH1F("h_TT_filter","",4,0,4); 
+	TH1F* h_test_pre = new TH1F("h_test_pre","",8,0,8);
 	string labels[10] = {"Total","preselection","trigger","lep","lepVeto","Recoil","MET","nJets","nBjets","Mbb"};
 	string filter_labels[4] = {"Total","Semi","lep","had"};
+	string test_pre_label[8] = {"MET pass","MET fail","Z pass", "Z fail", "w pass", "w fail", "gramma pass","gramma fail" };
 	for (int i=0; i<(int)(sizeof(labels)/sizeof(labels[0]) ); i++){
 		h_cut_flow->GetXaxis()->SetBinLabel(i+1,labels[i].data());
 	}
 	for (int i=0; i<(int)(sizeof(filter_labels)/sizeof(filter_labels[0]) ); i++ ){
 		h_TT_filter->GetXaxis()->SetBinLabel(i+1,filter_labels[i].data());
+	}
+	for (int i=0; i<(int)(sizeof(test_pre_label)/sizeof(test_pre_label[0]) ); i++ ){
+		h_test_pre->GetXaxis()->SetBinLabel(i+1,test_pre_label[i].data());
 	}
 	string line;
 	ifstream fin(inputfilelist.data());
@@ -444,7 +472,7 @@ void correlated_plot(string inputfilelist, string outputfile = "histo.root"){
 	vector<vector<float> > vDDB;
 	vector<vector<float> > vPNET;
 	while(getline(fin,line)){ // read the file
-		load_to_hist_bkg(line,h_pNET,h_cut_flow,h_TT_filter,DDB,PNET);
+		load_to_hist_bkg(line,h_pNET,h_cut_flow,h_TT_filter,DDB,PNET,h_test_pre);
 		vDDB.push_back(DDB);
 		vPNET.push_back(PNET);
 		DDB.clear();
@@ -464,8 +492,9 @@ void correlated_plot(string inputfilelist, string outputfile = "histo.root"){
 		ot.Fill();
 	}
 	h_pNET->Write();
-	h_cut_flow->Write();
+	if (region != 3) h_cut_flow->Write(); // we don't compare cutFlow for boosted_SR now
 	h_TT_filter->Write();
+	h_test_pre->Write();
 	fout->Write();
 	fout->Close();
 }		

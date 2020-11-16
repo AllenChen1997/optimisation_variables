@@ -122,10 +122,9 @@ void transform_To_Eff(string input1, string histo1, string input2 = "", string h
 		int k = 0;
 		int N;
 		while (k>=0){
-			if (showsinN*(k+1) < Nbin) N = showsinN;
-			else if (showsinN*(k+1) == Nbin) break;
+			if (showsinN*(k+1) <= Nbin) N = showsinN;
 			else N = Nbin - showsinN*k ;
-			for (int i=1; i<=N; i++) cout << setw(s_size) << h1->GetXaxis()->GetBinLabel(i+showsinN*k) << " | ";
+			for (int i=1; i<=N; i++) cout << setw(s_size) << h_eff1->GetXaxis()->GetBinLabel(i+showsinN*k) << " | ";
 			cout << endl;
 			
 			for (int i=1; i<=N; i++)	cout << setw(s_size) << h_eff1->GetBinContent(i+showsinN*k) << "   ";
@@ -149,6 +148,7 @@ void transform_To_Eff(string input1, string histo1, string input2 = "", string h
 				cout << endl;
 			}
 			if (N<5) break;
+			if (showsinN*(k+1) == Nbin) break;
 			else k++;
 		}
 	}
