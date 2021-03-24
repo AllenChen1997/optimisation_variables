@@ -2,7 +2,7 @@
 	this code is build for letting trigger efficiency -> 100%
 	we use off-line HT, trigger paths in tree
 */	
-bool isTest = false;
+bool isTest = true;
 
 using namespace std;
 void draw_trigEff(string inputname){
@@ -26,11 +26,13 @@ void draw_trigEff(string inputname){
 		HighEdge[paths[i]] = tmph->GetBinLowEdge(nmaxBin+1);
 	}
 	
-	TH1F* hpass1[10];
-	TH1F* hpass12[10];
+	TH1F* hpass1;
+	hpass1 = new TH1F(prefixterm+"_180","",120,0,1200);
+	TH1F* hpass2[10];
+	TH1F* hpass21[10];
 	for (int i=0; i<10;i++){
-		hpass1[i] = new TH1F(prefixterm+"_"+paths[i],"",120,0,1200);
-		hpass12[i] = new TH1F(prefixterm+"_"+paths[i]+"_"+paths[i+1],"",120,0,1200);
+		hpass2[i] = new TH1F(prefixterm+"_180_"+paths[i+1],"",120,0,1200);
+		hpass21[i] = (TH1F*) hpass2[i]->Clone(prefixterm+paths[i+1]+"_divide");
 	}
 	int total_entry = myRead.GetEntries(true);
 	int jEntry = 0;
@@ -48,21 +50,21 @@ void draw_trigEff(string inputname){
 			if (prescales[it] < LowEdge[passTrigs[it]] || prescales[it] > HighEdge[passTrigs[it]] ) continue;
 			selectedList.push_back(passTrigs[it]);
 		}
-		for(int i=0;i<10;i++){
-			auto ifound = find(selectedList.begin(),selectedList.end(),paths[i]);
-			if (ifound != selectedList.end() ) {
-				hpass1[i]->Fill(*HT_);
+		auto ifound = find(selectedList.begin(),selectedList.end(),180);
+		if (ifound != selectedList.end() ) {
+			hpass1->Fill(*HT_);
+			for(int i=0;i<10;i++){
 				ifound = find(selectedList.begin(),selectedList.end(), paths[i+1]);
-				if (ifound != selectedList.end() ) hpass12[i]->Fill(*HT_);
+				if (ifound != selectedList.end() ) hpass2[i]->Fill(*HT_);
 			}
 		}
 	} // end of all entries
 	// output plots
 	TCanvas* c = new TCanvas("c","c");
 	for (int i=0;i<10;i++){
-		hpass12[i]->Divide(hpass1[i]);
-		hpass12[i]->Draw();
-		c->SaveAs(prefixterm+paths[i]+"_noMET.png");
+		hpass21[i]->Divide(hpass2[i],hpass1,1,1,"B");
+		hpass21[i]->Draw();
+		c->SaveAs(prefixterm+paths[i+1]+"_noMET.png");
 	}
 }
 	
