@@ -32,6 +32,7 @@ void savehist(map<string, map<int, TH1F* > > m, bool isprint){
 void testTrig(string inputFile, string outfile){
 	// data collection STLs
 	map<string, TH1F*> PFHT_names;
+	map<string, TH1F*> PFHT_names_noResCut;
 	map<string, map< int, TH1F* > > PFHT_prescale_MET;
 	map<string, map< int, TH1F* > > PFHT_prescale_HTwMET;
 	map<string, map< int, TH1F* > > PFHT_prescale_HTnoMET;
@@ -112,10 +113,9 @@ void testTrig(string inputFile, string outfile){
 			it++;
 			string thisTrig= trigName[it];
 			bool results = trigResult[it];
-			// cuts for trigger //
+			// cuts for trigger: trig name, trig result //
 			if(thisTrig.find("HLT_PFHT")== std::string::npos)continue;
 			if(thisTrig.size() > 20 ) continue;
-			if (results != 1) continue;
 			// pick the trigger path name: HLT_PFHT180_v8 ---> PFHT180 //
 			stringstream ss(thisTrig);
 			string trigPath;
@@ -125,12 +125,18 @@ void testTrig(string inputFile, string outfile){
 				if (counterT == 2) break; // the key word always in the second place by the delimiter "_"
 			} // now trigPath should be PFHT180 or some other numbers 370, 390 ...
 			ss.clear();
-			// check all prescale distribution in each triger path //
+			// check all prescale distribution in each triger path // 
 			int iprescale = prescale[it];
 			if (PFHT_names[trigPath] == nullptr){
 				TH1F* tmph = new TH1F(trigPath.data(),trigPath.data() ,110,0,1100);
 				PFHT_names[trigPath] = tmph;
+				string newName = trigPath+"_";
+				TH1F* tmph2 = (TH1F*)tmph->Clone(newName.data());
+				PFHT_names_noResCut[trigPath] = tmph2;
 			}
+			PFHT_names_noResCut[trigPath]->Fill(iprescale);
+			
+			if (results != 1) continue;
 			PFHT_names[trigPath]->Fill(iprescale);
 			// to look MET/HT distribution in each path and prescale //
 			if (PFHT_prescale_MET[trigPath][iprescale] == nullptr){
@@ -176,6 +182,7 @@ void testTrig(string inputFile, string outfile){
 	savehist(PFHT_prescale_HTnoMET,false);
 
 	for (auto x : PFHT_names)  x.second->Write();
+	for (auto x : PFHT_names_noResCut)  x.second->Write();
 	outTree.Write();
 	fout->Close();
 	  
