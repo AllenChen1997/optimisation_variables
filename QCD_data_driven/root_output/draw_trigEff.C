@@ -2,8 +2,8 @@
 	this code is build for letting trigger efficiency -> 100%
 	we use off-line HT, trigger paths in tree
 */	
-bool isTest = true;
-
+bool isTest = false;
+bool useNoTrigResCut = true;
 using namespace std;
 void draw_trigEff(string inputname){
 	TFile* fin = new TFile(inputname.data(),"READONLY");
@@ -18,12 +18,28 @@ void draw_trigEff(string inputname){
 	int paths[11] = {180, 250, 350, 370, 430, 510, 590, 680, 780, 890, 1050};
 	map<int, int> LowEdge;
 	map<int, int> HighEdge;
+	map<int, int> LowEdge_;  // with underscope mean there is no trigger result cut (= 1)
+	map<int, int> HighEdge_;
 	// get what path + prescale we need
 	for (int i=0; i<11; i++){
-		TH1F* tmph = (TH1F*) fin->Get(prefixterm+paths[i]);
-		int nmaxBin = tmph->GetMaximumBin();
-		LowEdge[paths[i]] = tmph->GetBinLowEdge(nmaxBin);
-		HighEdge[paths[i]] = tmph->GetBinLowEdge(nmaxBin+1);
+		if (! useNoTrigResCut || isTest){
+			TH1F* tmph = (TH1F*) fin->Get(prefixterm+paths[i]);
+			int nmaxBin = tmph->GetMaximumBin();
+			LowEdge[paths[i]] = tmph->GetBinLowEdge(nmaxBin);
+			HighEdge[paths[i]] = tmph->GetBinLowEdge(nmaxBin+1);
+		}
+		if (useNoTrigResCut || isTest){
+			TH1F* tmph2 = (TH1F*) fin->Get(prefixterm+paths[i]+"_");
+			int nmaxBin = tmph2->GetMaximumBin();
+			LowEdge_[paths[i]] = tmph2->GetBinLowEdge(nmaxBin);
+			HighEdge_[paths[i]] = tmph2->GetBinLowEdge(nmaxBin+1);
+		}
+	}
+	
+	if (isTest){
+		for (auto x : LowEdge) cout << x.first << " : " << x.second << endl;
+		cout << "without trigger result cut" << endl;
+		for (auto x : LowEdge_) cout << x.first << " : " << x.second << endl;
 	}
 	
 	TH1F* hpass1;
@@ -47,7 +63,11 @@ void draw_trigEff(string inputname){
 		if (isTest) if(jEntry>100)break;
 		vector<int> selectedList;
 		for (int it=0; it<*nPassTrig; it++){ // we need to keep the most event prescales
-			if (prescales[it] < LowEdge[passTrigs[it]] || prescales[it] > HighEdge[passTrigs[it]] ) continue;
+			if (! useNoTrigResCut){
+				if (prescales[it] < LowEdge[passTrigs[it]] || prescales[it] > HighEdge[passTrigs[it]] ) continue;
+			} else {
+				if (prescales[it] < LowEdge_[passTrigs[it]] || prescales[it] > HighEdge_[passTrigs[it]] ) continue;
+			}
 			selectedList.push_back(passTrigs[it]);
 		}
 		auto ifound = find(selectedList.begin(),selectedList.end(),180);
@@ -60,11 +80,13 @@ void draw_trigEff(string inputname){
 		}
 	} // end of all entries
 	// output plots
-	TCanvas* c = new TCanvas("c","c");
-	for (int i=0;i<10;i++){
-		hpass21[i]->Divide(hpass2[i],hpass1,1,1,"B");
-		hpass21[i]->Draw();
-		c->SaveAs(prefixterm+paths[i+1]+"_noMET.png");
+	if( ! isTest) {
+		TCanvas* c = new TCanvas("c","c");
+		for (int i=0;i<10;i++){
+			hpass21[i]->Divide(hpass2[i],hpass1,1,1,"B");
+			hpass21[i]->Draw();
+			c->SaveAs(prefixterm+paths[i+1]+"_noMET.png");
+		}
 	}
 }
 	

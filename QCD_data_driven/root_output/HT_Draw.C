@@ -1,6 +1,6 @@
 using namespace std;
 void setdefault(TH1F* h, int scaleN, int colorN, float& maxN){
-	//h->GetXaxis()->SetRangeUser(0,960);
+	h->GetXaxis()->SetRangeUser(0,1500);
 	h->SetLineColor(colorN);
 	h->Scale(scaleN);
 	float nmax = h->GetMaximum();
@@ -18,13 +18,13 @@ void HT_Draw(){
 	TH1F* h180 = (TH1F*) fin->Get("PFHT180_pre1"+backfix);
 	TH1F* h250 = (TH1F*) fin->Get("PFHT250_pre1000"+backfix);
 	TH1F* h350 = (TH1F*) fin->Get("PFHT350_pre1000"+backfix);
-	TH1F* h370 = (TH1F*) fin->Get("PFHT370_pre5"+backfix);
-	TH1F* h430 = (TH1F*) fin->Get("PFHT430_pre5"+backfix);
+	TH1F* h370 = (TH1F*) fin->Get("PFHT370_pre300"+backfix);
+	TH1F* h430 = (TH1F*) fin->Get("PFHT430_pre150"+backfix);
 	TH1F* h510 = (TH1F*) fin->Get("PFHT510_pre75"+backfix);
 	TH1F* h590 = (TH1F*) fin->Get("PFHT590_pre30"+backfix);
 	TH1F* h680 = (TH1F*) fin->Get("PFHT680_pre30"+backfix);
 	TH1F* h780 = (TH1F*) fin->Get("PFHT780_pre30"+backfix);
-	TH1F* h890 = (TH1F*) fin->Get("PFHT890_pre15"+backfix);
+	TH1F* h890 = (TH1F*) fin->Get("PFHT890_pre30"+backfix);
 	TH1F* h1050 = (TH1F*) fin->Get("PFHT1050_pre1"+backfix);
 	
 	// set up hist
@@ -32,13 +32,13 @@ void HT_Draw(){
 	setdefault(h180,1,1,maxN);
 	setdefault(h250,1000,2,maxN);
 	setdefault(h350,1000,3,maxN);
-	setdefault(h370,5,4,maxN);
-	setdefault(h430,5,5,maxN);
+	setdefault(h370,300,4,maxN);
+	setdefault(h430,150,5,maxN);
 	setdefault(h510,75,6,maxN);
 	setdefault(h590,30,7,maxN);
 	setdefault(h680,30,8,maxN);
 	setdefault(h780,30,9,maxN);
-	setdefault(h890,15,11,maxN);
+	setdefault(h890,30,11,maxN);
 	setdefault(h1050,1,12,maxN);
 	// draw
 	TCanvas* c = new TCanvas("c","c");
