@@ -1,0 +1,2 @@
+root://se01.grid.nchc.org.tw//dpm/grid.nchc.org.tw/home/cms/store/user/syu//QCD_HT500to700_TuneCP5_13TeV-madgraph-pythia8/crab_QCD_HT500to700_TuneCP5_13TeV-madgraph-pythia8/201204_021149/0000/ExoPieElementTuples_1.root	
+root://se01.grid.nchc.org.tw//dpm/grid.nchc.org.tw/home/cms/store/user/syu//QCD_HT500to700_TuneCP5_13TeV-madgraph-pythia8/crab_QCD_HT500to700_TuneCP5_13TeV-madgraph-pythia8/201204_021149/0000/ExoPieElementTuples_10.root	
