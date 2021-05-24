@@ -26,7 +26,7 @@ void GetRfunction_multi(string inputfile, string outfile, bool isTest = false){
 	TH1F* h_met_mindphi_s[6];
 	TH1F* h_MET_[6];
 	//TH1F* h_MET_HTcut = (TH1F*) h_MET_->Clone("h_HTcut_MET");
-	TH1F* h_mc_weight = new TH1F("h_mc_weight","",2,0,2);
+	TH1F* h_mc_weight = new TH1F("h_mc_weight","",3,-1,2);
 	TH1F* h_dphi[6];
 	TH1F* h_HT = new TH1F("h_HT","",200,0,2000);
 	for (int i=0; i< sizeof(h_met_mindphi_l)/sizeof(h_met_mindphi_l[0]); i++){
@@ -44,9 +44,10 @@ void GetRfunction_multi(string inputfile, string outfile, bool isTest = false){
 		fin = TFile::Open(line.data(), "READONLY");
 		TTreeReader data("tree/treeMaker",fin);
 		TTreeReaderValue< Int_t > nVtx(data, "nVtx");
-		//TTreeReaderArray< string > trigName(data, "hlt_trigName");
-		//TTreeReaderArray< bool > trigResult(data, "hlt_trigResult");
-		//TTreeReaderArray< int > prescale(data, "hlt_trigPrescale");
+		TTreeReaderValue< Float_t > mcWeight(data, "mcWeight");
+		TTreeReaderArray< string > trigName(data, "hlt_trigName");
+		TTreeReaderArray< bool > trigResult(data, "hlt_trigResult");
+		//TTreeReaderArray< int > prescale(data, "hlt_trigPrescale"); // this only for data
 		  // MET //
 		TTreeReaderValue< Float_t > METPT(data, "pfMetCorrPt");
 		TTreeReaderValue< Float_t > METPhi(data, "pfMetCorrPhi");
@@ -56,11 +57,13 @@ void GetRfunction_multi(string inputfile, string outfile, bool isTest = false){
 		TTreeReaderArray< float > THINjetPy(data, "THINjetPy");
 		TTreeReaderArray< float > THINjetPz(data, "THINjetPz");
 		TTreeReaderArray< float > THINjetEnergy(data, "THINjetEnergy");
+		TTreeReaderArray< bool > THINjetPassIDTight(data, "THINjetPassIDTight");
 		  // fat jet //
 		TTreeReaderValue< Int_t > nfj(data, "FATnJet");
 		TTreeReaderArray< Float_t > fatJPx(data, "FATjetPx");
 		TTreeReaderArray< Float_t > fatJPy(data, "FATjetPy");
 		TTreeReaderArray< Float_t > fatJPz(data, "FATjetPz");
+		TTreeReaderArray< Float_t > fatJE(data, "FATjetEnergy");
 		TTreeReaderArray< Float_t > N2B1(data, "FATN2_Beta1_"); // N2B1
 		TTreeReaderArray< Float_t > DDB(data, "FATjet_probHbb"); // DDB
 		  // gen particle //
@@ -113,22 +116,193 @@ void GetRfunction_multi(string inputfile, string outfile, bool isTest = false){
 				else if (jEntry == total_entry) cout <<  "Processing event " << jEntry << " of " << total_entry << endl;
 			}
 			if (isTest) if(jEntry>100)break;
-			h_mc_weight->Fill(1);
+			
+			int weight = 0;
+			if (*mcWeight > 0) weight = 1;
+			else weight = -1;
+			h_mc_weight->Fill(weight);
 			//0. has a good vertex
 			if(*nVtx<1)continue;
-
-			//1. ak4Jet
+			
+			//1.1 eletron looseID
+			vector<TLorentzVector> passEle;
+			for (int ie=0; ie<(int)*nEle; ie++){
+				TLorentzVector tmpTLE;
+				tmpTLE.SetPxPyPzE(elePx[ie], elePy[ie], elePz[ie], eleE[ie]);
+				float elept = tmpTLE.Pt();
+				float abs_eleEta = TMath::Abs(tmpTLE.Eta() );
+				if (elept < 10) continue;
+				if (! eleLooseID[ie]) continue;
+				if (abs_eleEta > 2.5) continue;
+				if (abs_eleEta > 1.4442 && abs_eleEta < 1.566) continue;
+				passEle.push_back(tmpTLE);
+			} // end of loop ele
+			
+			//1.2 muon  
+			vector<TLorentzVector> passLooseMu;
+			vector<TLorentzVector> passTightMu;
+			for (int imu=0; imu<*nMu; imu++){
+				TLorentzVector tmpTLMu;
+				tmpTLMu.SetPxPyPzE(muPx[imu], muPy[imu], muPz[imu], muE[imu]);
+				float mupt = tmpTLMu.Pt();
+				float abs_muEta = TMath::Abs(tmpTLMu.Eta() );
+				if (abs_muEta >= 2.4) continue;
+				if (mupt <= 10) continue;
+				if (! muLooseID[imu]) continue;
+				if (! muIsoLoose[imu]) continue;
+				passLooseMu.push_back(tmpTLMu);
+				if (mupt <= 30) continue;
+				if (! muIsoTight[imu]) continue;
+				if (! muTightID[imu]) continue;
+				passTightMu.push_back(tmpTLMu);
+			} // end of loop muon
+			
+			//1.3 identify tau //
+			vector<TLorentzVector> passTau;
+			vector<TLorentzVector> passTau_againstLep;
+			for (int itau=0; itau<(int)*nTau; itau++){
+				TLorentzVector tmpTLTau;
+				tmpTLTau.SetPxPyPzE(tauPx[itau],tauPy[itau],tauPz[itau],tauE[itau]);
+				float tauPt = tmpTLTau.Pt();
+				float abs_tauEta = TMath::Abs(tmpTLTau.Eta() );
+				if(abs_tauEta >= 2.3) continue;
+				if (tauPt <= 18 ) continue;
+				if (! tauDM[itau] ) continue;
+				if (! tauIsLoose[itau] ) continue;
+				passTau.push_back(tmpTLTau);
+			} 
+				// against lep
+			for (auto x : passTau){
+				bool noEle = true;
+				bool noMu = true;
+				for (auto xe : passEle){
+					float dr = x.DeltaR(xe);
+					if (dr < 0.4) {
+						noEle = false;
+						break;
+					}
+				}
+				for (auto xmu : passLooseMu){
+					float dr = x.DeltaR(xmu);
+					if (dr < 0.4) {
+						noMu = false;
+						break;
+					}
+				}
+				if (noEle && noMu) passTau_againstLep.push_back(x);
+			} // end of identify tau
+			
+			//2. identify photon //
+			vector<TLorentzVector> passPho;
+			for (int iph=0; iph<(int)*nPho ; iph++){
+				TLorentzVector tmpTLPho;
+				tmpTLPho.SetPxPyPzE(phoPx[iph],phoPy[iph], phoPz[iph], phoE[iph] );
+				float phoPt = tmpTLPho.Pt();
+				float abs_phoEta = TMath::Abs(tmpTLPho.Eta() );
+				if (phoPt < 15) continue;
+				if ( ! phoLooseID[iph] )continue;
+				if ( abs_phoEta > 2.5) continue;
+				passPho.push_back(tmpTLPho);
+			} // end of loop photon
+			
+			//3. MET //
+			bool METState = (*METPT > 180);
+			
+			
+			//4.1 w CR recoil // 
+			bool WRecoilState = false;
+			if (passEle.size() == 1){
+				float RecoilPx = -(*METPT * TMath::Cos(*METPhi) ) + passEle[0].Px();
+				float RecoilPy = -(*METPT * TMath::Sin(*METPhi) ) + passEle[0].Py();
+				float weRecoil = TMath::Sqrt(RecoilPx*RecoilPx + RecoilPy*RecoilPy);
+				if (weRecoil > 180 ) WRecoilState = true;
+			}
+			if (passLooseMu.size() == 1 ){
+				float RecoilPx = -(*METPT * TMath::Cos(*METPhi) ) + passLooseMu[0].Px();
+				float RecoilPy = -(*METPT * TMath::Sin(*METPhi) ) + passLooseMu[0].Py();
+				float wmuRecoil = TMath::Sqrt(RecoilPx*RecoilPx + RecoilPy*RecoilPy);
+				if (wmuRecoil > 180 ) WRecoilState = true;
+			}
+			
+			//4.2 Gamma CR //
+			bool GammaRecoilState = false; // true when recoil > 180
+			if (passPho.size() == 1){
+				float RecoilPx = -(*METPT * TMath::Cos(*METPhi) ) + passPho[0].Px();
+				float RecoilPy = -(*METPT * TMath::Sin(*METPhi) ) + passPho[0].Py();
+				float RecoilPt = TMath::Sqrt(RecoilPx*RecoilPx + RecoilPy*RecoilPy);
+				if (RecoilPt > 180) GammaRecoilState = true;
+			}
+			
+			//4.3 Z CR recoil //
+			bool ZRecoilState = false;
+			if (passEle.size() == 2 ){
+				TLorentzVector ee = passEle[0] + passEle[1];
+				float ee_mass = ee.M();
+				float RecoilPx = -(*METPT * TMath::Cos(*METPhi) ) + passEle[0].Px() + passEle[1].Px();
+				float RecoilPy = -(*METPT * TMath::Sin(*METPhi) ) + passEle[0].Py() + passEle[1].Py();
+				float RecoilPt = TMath::Sqrt(RecoilPx*RecoilPx + RecoilPy *RecoilPy);
+				if (ee_mass > 60.0 && ee_mass < 120.0 && RecoilPt > 180.0) ZRecoilState = true;
+			}
+			if (passLooseMu.size() == 2 ){
+				TLorentzVector mumu = passLooseMu[0] + passLooseMu[1];
+				float mumu_mass = mumu.M();
+				float RecoilPx = -(*METPT * TMath::Cos(*METPhi) ) + passLooseMu[0].Px() + passLooseMu[1].Px();
+				float RecoilPy = -(*METPT * TMath::Sin(*METPhi) ) + passLooseMu[0].Py() + passLooseMu[1].Py();
+				float RecoilPt = TMath::Sqrt(RecoilPx*RecoilPx + RecoilPy*RecoilPy);
+				if (mumu_mass > 60.0 && mumu_mass < 120.0 && RecoilPt > 180.0) ZRecoilState = true;
+			}
+				
+			//5. trigger?
+			
+			//6. fatJet identify //
+			vector<TLorentzVector> passFatJ;
+			for (int ij=0; ij<(int)*nfj; ij++){
+				TLorentzVector tmpTLFatJ;
+				tmpTLFatJ.SetPxPyPzE(fatJPx[ij],fatJPy[ij], fatJPz[ij], fatJE[ij]);
+				float fjPt = tmpTLFatJ.Pt();
+				float abs_fjEta = TMath::Abs(tmpTLFatJ.Eta() );
+				float fjMass = tmpTLFatJ.M();
+				if (abs_fjEta >= 2.5) continue;
+				if (fjPt <= 200 ) continue;
+				if (fjMass < 100 || fjMass > 150 ) continue;
+				passFatJ.push_back(tmpTLFatJ);
+			}// end loop of fj
+			
+			//7. ak4Jet
 			vector<TLorentzVector> ak4_eta_3p0_pt_20; 
 			for (int ijet = 0; ijet < *THINnJet; ijet++){
 				TLorentzVector tmpTL;
 				tmpTL.SetPxPyPzE(THINjetPx[ijet],THINjetPy[ijet],THINjetPz[ijet],THINjetEnergy[ijet]);
 				float absjetEta = TMath::Abs(tmpTL.Eta() );
 				float jetPt = tmpTL.Pt();
+				// basic cuts
 				if (absjetEta >= 2.5) continue;
 				if (jetPt <= 30) continue;
+				if (! THINjetPassIDTight[ijet] ) continue;
+				// jet clean
+				bool noEle = true;
+				for (auto xe : passEle){
+					float dr = tmpTL.DeltaR(xe);
+					if (dr < 0.4 ){
+						noEle = false;
+						break;
+					}
+				}
+				if (! noEle) continue;
+				bool noMu = true;
+				for (auto xmu : passLooseMu){
+					float dr = tmpTL.DeltaR(xmu);
+					if (dr < 0.4 ) {
+						noMu = false;
+						break;
+					}
+				}
+				if (! noMu) continue;
 				// collect ak4 jet pass pt, eta cut. for getting delta phi 
 				ak4_eta_3p0_pt_20.push_back(tmpTL);
 			}
+
+			
 			sort(ak4_eta_3p0_pt_20.begin(), ak4_eta_3p0_pt_20.end(), pt_greater );
 			float offline_HT = 0;
 			for (auto x : ak4_eta_3p0_pt_20) {
@@ -144,43 +318,17 @@ void GetRfunction_multi(string inputfile, string outfile, bool isTest = false){
 					}
 				}
 			}
-			//2. eletron looseID
-			vector<int> passEleId;
-			for (int ie=0; ie<(int)*nEle; ie++){
-				TLorentzVector tmpTLE;
-				tmpTLE.SetPxPyPzE(elePx[ie], elePy[ie], elePz[ie], eleE[ie]);
-				float elept = tmpTLE.Pt();
-				float abs_eleEta = TMath::Abs(tmpTLE.Eta() );
-				if (elept < 10) continue;
-				if (! eleLooseID[ie]) continue;
-				if (abs_eleEta > 2.5) continue;
-				if (abs_eleEta > 1.4442 && abs_eleEta < 1.566) continue;
-				passEleId.push_back(ie);
-			} // end of loop ele
-			
-			//3. muon  
-			vector<int> passLooseMuId;
-			vector<int> passTightMuId;
-			for (int imu=0; imu<*nMu; imu++){
-				TLorentzVector tmpTLMu;
-				tmpTLMu.SetPxPyPzE(muPx[imu], muPy[imu], muPz[imu], muE[imu]);
-				float mupt = tmpTLMu.Pt();
-				float abs_muEta = TMath::Abs(tmpTLMu.Eta() );
-				if (abs_muEta >= 2.4) continue;
-				if (mupt <= 10) continue;
-				if (! muLooseID[imu]) continue;
-				if (! muIsoLoose[imu]) continue;
-				passLooseMuId.push_back(imu);
-				if (mupt <= 30) continue;
-				if (! muIsoTight[imu]) continue;
-				if (! muTightID[imu]) continue;
-				passTightMuId.push_back(imu);
-			} // end of loop muon
-			
-			//4. apply mindphi
+			//4. apply mindphi && addtional ak4 jet test(<=2)
+			int nExtraAk4 = 0;
 			float mindphi = 999;
 			float nLeadingJ = 0;
 			for (auto x : ak4_eta_3p0_pt_20){
+				// additional ak4_jet 
+				if (passFatJ.size() == 1){
+					float dr = x.DeltaR(passFatJ[0]);
+					if (dr >= 1.2 ) nExtraAk4++;
+				}
+				// min dphi
 				float tmpdPhi = cal_dphi(*METPhi,x.Phi() );
 				h_dphi[whichHT]->Fill(tmpdPhi);
 				if (mindphi > tmpdPhi) mindphi = tmpdPhi;
