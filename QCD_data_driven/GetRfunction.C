@@ -87,7 +87,7 @@ void GetRfunction(string inputfile, string outfile, bool isTest = false){
 			h_dphi->Fill(tmpdPhi);
 			if (mindphi > tmpdPhi) mindphi = tmpdPhi;
 			nLeadingJ++;
-			if (nLeadingJ == 4) break; // take only 4 leading jet to calculate mindphi
+			//if (nLeadingJ == 4) break; // take only 4 leading jet to calculate mindphi
 		}
 		//cout << "mindphi" << mindphi << endl;
 		if (mindphi == 999) continue; // 999 means there is no ak4j
