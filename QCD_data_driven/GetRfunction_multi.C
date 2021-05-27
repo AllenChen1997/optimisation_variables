@@ -2,6 +2,7 @@
 	this code is used to getting r = min(dphi(met,ak4j)) > 0.4 / min(dphi(met,ak4j)) < 0.4 
 	as a function of met
 	using ExoPieElement output dataTemplate
+	the output will be tree with cuts flag.
 */
 using namespace std;
 float pi = TMath::Pi();
@@ -33,6 +34,20 @@ void run_code(string inputfile, string outfile, bool isTest = false, bool isAppl
 	TH1F* h_dphi[6];
 	TH1F* h_HT = new TH1F(Form("h_HT%s",subline.c_str() ),"",200,0,2000);
 	TH1F* h_cutFlow = new TH1F(Form("h_cutFlow%s",subline.c_str() ),"",10,0,10); // check the SR cuts
+	
+	// output tree //
+	float mindphi;
+	int whichHT;
+	float metpT;
+	int weight;
+	vector<bool> cuts;
+	TFile* fout = new TFile(outfile.data(),"UPDATE");
+	TTree ot("tree","vars");
+	ot.Branch("mindphi",&mindphi);
+	ot.Branch("cuts",&cuts);
+	ot.Branch("whichHT",&whichHT);
+	ot.Branch("metpT",&metpT);
+	ot.Branch("weight",&weight);
 
 	for (int i=0; i< sizeof(h_met_mindphi_l)/sizeof(h_met_mindphi_l[0]); i++){
 		h_met_mindphi_l[i] = new TH1F(Form("h_met_mindphi_l%s_%i",subline.c_str(),i),"",15,xbins);
@@ -126,7 +141,7 @@ void run_code(string inputfile, string outfile, bool isTest = false, bool isAppl
 			}
 			if (isTest) if(jEntry>100)break;
 			
-			int weight = 0;
+			weight = 0;
 			if (*mcWeight > 0) weight = 1;
 			else weight = -1;
 			h_mc_weight->Fill(weight);
@@ -339,7 +354,7 @@ void run_code(string inputfile, string outfile, bool isTest = false, bool isAppl
 				offline_HT += x.Pt();
 			}
 			// select the certian range of HT regions -> find using trigger path -> check trigger result
-			int whichHT = -1;
+			whichHT = -1;
 			if (offline_HT != 0){
 				for (int i = 0; i< totalNRange-1 ; i++){
 					if (offline_HT > HTUseRange[i] && offline_HT < HTUseRange[i+1]){
@@ -350,7 +365,7 @@ void run_code(string inputfile, string outfile, bool isTest = false, bool isAppl
 			}
 			//7.2 apply mindphi && addtional ak4 jet test(<=2)
 			int nExtraAk4 = 0;
-			float mindphi = 999;
+			mindphi = 999;
 			float nLeadingJ = 0;
 			for (auto x : ak4_eta_3p0_pt_20){
 				// additional ak4_jet 
@@ -366,11 +381,12 @@ void run_code(string inputfile, string outfile, bool isTest = false, bool isAppl
 				//if (nLeadingJ == 4) break; // take only 4 leading jet to calculate mindphi
 			}
 			//8. do the cut
+			/* skip in this iter. try to study these cuts
 			if (isApplySR){
 				h_cutFlow->Fill(0);
-				//if (! METState && ! ZRecoilState && ! WRecoilState && ! GammaRecoilState) continue;
+				if (! METState && ! ZRecoilState && ! WRecoilState && ! GammaRecoilState) continue;
 				h_cutFlow->Fill(1);
-				//if (! MET_triggerState) continue;
+				if (! MET_triggerState) continue;
 				h_cutFlow->Fill(2);
 				if (*METPT <= 200) continue;
 				h_cutFlow->Fill(3);
@@ -387,15 +403,34 @@ void run_code(string inputfile, string outfile, bool isTest = false, bool isAppl
 				if (passFatJ.size() != 1 ) continue;
 				h_cutFlow->Fill(9);
 			}
-			if (mindphi == 999) continue; // 999 means there is no ak4j
+			*/
+			// there are six cuts now.
+			cuts.clear();
+			if (passTau_againstLep.size() > 0) cuts.push_back(false);
+			else cuts.push_back(true);
+			if (passPho.size() > 0) cuts.push_back(false);
+			else cuts.push_back(true);
+			if (passEle.size() > 0) cuts.push_back(false);
+			else cuts.push_back(true);
+			if (passLooseMu.size() > 0) cuts.push_back(false);
+			else cuts.push_back(true);
+			if (nExtraAk4 > 2 ) cuts.push_back(false);
+			else cuts.push_back(true);
+			if (passFatJ.size() != 1 ) cuts.push_back(false);
+			else cuts.push_back(true);
+			
+			//if (mindphi == 999) continue; // 999 means there is no ak4j
 			h_HT->Fill(offline_HT);
 			h_MET_[whichHT]->Fill(*METPT);
 			//if (offline_HT > 200) h_MET_HTcut->Fill(*METPT);
 			if (mindphi > 0.4) h_met_mindphi_l[whichHT]->Fill(*METPT);
 			else h_met_mindphi_s[whichHT]->Fill(*METPT);
+			
+			metpT = *METPT;
+			ot.Fill();
 		} // end of entries
 	}// end of file list
-	TFile* fout = new TFile(outfile.data(),"UPDATE");
+	/*TFile* fout = new TFile(outfile.data(),"UPDATE");
 	for (int i=0; i<sizeof(h_met_mindphi_s) / sizeof(h_met_mindphi_s[0]); i++ ){
 		h_met_mindphi_s[i]->Write();
 		h_met_mindphi_l[i]->Write();
@@ -406,11 +441,15 @@ void run_code(string inputfile, string outfile, bool isTest = false, bool isAppl
 	h_HT->Write();
 	if (isApplySR) h_cutFlow->Write();
 	//h_MET_HTcut->Write();
+	*/
+	fout->cd();
+	ot.Write();
 	fout->Close();
 }
 
-void GetRfunction_multi(string inputfile, string outfile, bool isTest = true){
-	run_code(inputfile,outfile,isTest,true,true); //for last two isApplySR , isSplit
-	run_code(inputfile,outfile,isTest,false,true); 
+void GetRfunction_multi(string inputfile, string outfile, bool isTest = false){
+	//run_code(inputfile,outfile,isTest,true,true); //for last two isApplySR , isSplit
+	//run_code(inputfile,outfile,isTest,false,true); 
+	run_code(inputfile,outfile,isTest,true,false); 
 }
 	
