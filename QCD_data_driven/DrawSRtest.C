@@ -32,6 +32,10 @@ void runCode(int n=6,bool isTest = false){
 	string subline = "_withSR";
 	Double_t xbins[16] = {0, 25, 50, 75, 100, 125, 150, 175, 200, 250, 300, 350, 400, 500, 600, 1000};
 	string label[6] = {"tauVeto","photonVeto","EleVeto","LooseMuVeto","extraAk4","nFatJ"};
+	TH2F* h_map_l = new TH2F("map_l","",15,xbins,6,0,6);
+	TH2F* h_map_s = (TH2F*) h_map_l->Clone("map_s");
+	TH2F* h_map_l_ = (TH2F*) h_map_l->Clone("map_l_");
+	TH2F* h_map_s_ = (TH2F*) h_map_l->Clone("map_s_");
 
 	for (int i=0; i< h_met_mindphi_l.size(); i++){
 		h_met_mindphi_l[i] = new TH1F(Form("h_met_mindphi_l_withSR_%i",i),"",15,xbins);
@@ -59,8 +63,9 @@ void runCode(int n=6,bool isTest = false){
 	
 	// load files 
 	string inputlist[8] = {"QCD_100to200.root","QCD_200to300.root","QCD_300to500.root","QCD_500to700.root","QCD_700to1000.root","QCD_1000to1500.root","QCD_1500to2000.root","QCD_2000toInf.root"};
+	string outputname[8] = {"100to200","200to300","300to500","500to700","700to1000","1000to1500","1500to2000","2000toIng"};
 	float xs[8] = {	23700000.0, 1547000.0, 322600.0, 29980.0, 6334.0, 1088.0, 99.11, 20.23};
-	for (int i=0; i<8; i++){
+	for (int i=2; i<8; i++){
 		// reset all vectors 
 		for (int x=0; x< tmp_l.size(); x++){
 			tmp_l[x]->Reset("ICESM");
@@ -68,6 +73,10 @@ void runCode(int n=6,bool isTest = false){
 			tmp_l_[x]->Reset("ICESM");
 			tmp_s_[x]->Reset("ICESM");
 		}
+		h_map_l->Reset("ICESM");
+		h_map_s->Reset("ICESM");
+		h_map_l_->Reset("ICESM");
+		h_map_s_->Reset("ICESM");
 		tmp_weight = {0,0};
 		
 		cout << "reading " << inputlist[i] << endl;
@@ -90,11 +99,11 @@ void runCode(int n=6,bool isTest = false){
 			// check cuts //
 			if (*whichHT < 0 ) continue;
 			if (jEntry%2 == 0) {
-				tmp_weight[1]++;
+				tmp_weight[1] += *weight;
 				if (*mindphi > 0.4) tmp_l_[*whichHT]->Fill(*metpT);
 				else tmp_s_[*whichHT]->Fill(*metpT);
 			} else{
-				/*bool ispass = true;
+				bool ispass = true;
 				for (int ncut = 0; ncut < n; ncut++){
 					if (! cuts[ncut]){
 						ispass = false;
@@ -102,9 +111,9 @@ void runCode(int n=6,bool isTest = false){
 					}
 					h_cutFlow[i]->Fill(ncut);
 				}
-				if (! ispass ) continue;*/
-				if (! cuts[n-1]) continue;
-				tmp_weight[0]++;
+				if (! ispass ) continue;
+				// if (! cuts[n-1]) continue;
+				tmp_weight[0] += *weight;
 				if (*mindphi > 0.4) tmp_l[*whichHT]->Fill(*metpT);
 				else tmp_s[*whichHT]->Fill(*metpT);
 			}
@@ -115,10 +124,26 @@ void runCode(int n=6,bool isTest = false){
 			h_met_mindphi_s[k]->Add(tmp_s[k], xs[i] /(float) tmp_weight[0]);
 			h_met_mindphi_l_[k]->Add(tmp_l_[k], xs[i] /(float) tmp_weight[1]);
 			h_met_mindphi_s_[k]->Add(tmp_s_[k], xs[i] /(float) tmp_weight[1]);
+			/*for (int nbin = 1; nbin<=15; nbin++){
+				h_map_l->SetBinContent(nbin,k+1,tmp_l[k]->GetBinContent(nbin) );
+				h_map_s->SetBinContent(nbin,k+1,tmp_s[k]->GetBinContent(nbin) );
+				h_map_l_->SetBinContent(nbin,k+1,tmp_l_[k]->GetBinContent(nbin) );
+				h_map_s_->SetBinContent(nbin,k+1,tmp_s_[k]->GetBinContent(nbin) );
+			}*/
 		}
+		gStyle->SetOptStat("");
+		/*TCanvas* c3 = new TCanvas("c3","c3");
+		h_map_l->Draw("COLZ");
+		c3->SaveAs(Form("map_l_withSR_%s.png",outputname[i].data() ) );
+		h_map_l_->Draw("COLZ");
+		c3->SaveAs(Form("map_l_noCut_%s.png",outputname[i].data() ) );
+		h_map_s->Draw("COLZ");
+		c3->SaveAs(Form("map_s_withSR_%s.png",outputname[i].data() ) );
+		h_map_s_->Draw("COLZ");
+		c3->SaveAs(Form("map_s_noCut_%s.png",outputname[i].data() ) );*/
 	} // end of all files
 		
-	gStyle->SetOptStat("");
+
 	TFile* fout = new TFile(Form("keep_histo_cut%i.root",n),"RECREATE");
 	TCanvas* c = new TCanvas("c","c");
 	c->Divide(1,2,0,0);
@@ -158,9 +183,13 @@ void runCode(int n=6,bool isTest = false){
 		c2->SaveAs(Form("cutFlow_%i.png",i));
 	}*/
 	
+
+	
 }
 void DrawSRtest(){
-	for (int i=1; i<=6; i++){
-		runCode(i,false);
-	}
+	// for (int i=1; i<=6; i++){
+		// runCode(i,false);
+	// }
+			runCode();
+
 }
