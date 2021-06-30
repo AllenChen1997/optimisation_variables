@@ -3,9 +3,9 @@
 	we use off-line HT, trigger paths in tree
 */	
 bool isTest = false;
-bool useNoTrigResCut = true;
+bool useNoTrigResCut = false;
 using namespace std;
-void draw_trigEff(string inputname){
+void draw_trigEff(string inputname, string outputname){
 	TFile* fin = new TFile(inputname.data(),"READONLY");
 	TTreeReader myRead("tree",fin);
 	TTreeReaderValue<int> nPassTrig(myRead,"nPassTrig");
@@ -81,12 +81,15 @@ void draw_trigEff(string inputname){
 	} // end of all entries
 	// output plots
 	if( ! isTest) {
-		TCanvas* c = new TCanvas("c","c");
+		//TCanvas* c = new TCanvas("c","c");
+		TFile* fout = new TFile(outputname.data(),"RECREATE");
 		for (int i=0;i<10;i++){
 			hpass21[i]->Divide(hpass2[i],hpass1,1,1,"B");
-			hpass21[i]->Draw();
-			c->SaveAs(prefixterm+paths[i+1]+"_noMET.png");
+			//hpass21[i]->Draw();
+			//c->SaveAs(prefixterm+paths[i+1]+"_noMET.png");
+			hpass21[i]->Write();
 		}
+		fout->Close();
 	}
 }
 	
