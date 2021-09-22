@@ -29,8 +29,8 @@
 //
 using namespace std;
 
-string filesdir = "/afs/cern.ch/work/k/kuchen/public/samples/";
-string sig_root= filesdir+"EXO-ggToXdXdHToBB_sinp_0p35_tanb_1p0_mXd_10_MH3_1000_MH4_150_MH2_1000_MHC_1000_CP3Tune_13TeV.root";
+string filesdir = "/afs/cern.ch/work/k/kuchen/public/v06_00_05/";
+string sig_root= filesdir+"crab_EXO-ggToXdXdHToBB_sinp_0p35_tanb_1p0_mXd_10_MH3_1000_MH4_150_MH2_1000_MHC_1000_CP3Tune_13TeV_0000_1.root";
 string tt_semi= filesdir+"crab_TTToSemiLeptonic_TuneCP5_PSweights_13TeV-powheg-pythia8.root";
 string tt_LL = filesdir+"crab_TTTo2L2Nu_TuneCP5_PSweights_13TeV-powheg-pythia8.root";
 string tt_had = filesdir+"crab_TTToHadronic_TuneCP5_PSweights_13TeV-powheg-pythia8.root";
