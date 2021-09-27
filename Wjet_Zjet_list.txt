@@ -5,10 +5,10 @@
 /afs/cern.ch/work/k/kuchen/public/samples/crab_WJetsToLNu_HT-400to600.root 57.48
 /afs/cern.ch/work/k/kuchen/public/samples/crab_WJetsToLNu_HT-600to800.root 12.87
 /afs/cern.ch/work/k/kuchen/public/samples/crab_WJetsToLNu_HT-800to1200.root 5.366
-/afs/cern.ch/work/k/kuchen/public/samples/crab_ZJetsToNuNu_HT-100to200.root 280.35
-/afs/cern.ch/work/k/kuchen/public/samples/crab_ZJetsToNuNu_HT-1200to2500.root 0.28833
-/afs/cern.ch/work/k/kuchen/public/samples/crab_ZJetsToNuNu_HT-200to400.root 77.67
-/afs/cern.ch/work/k/kuchen/public/samples/crab_ZJetsToNuNu_HT-2500toInf.root 0.006945
-/afs/cern.ch/work/k/kuchen/public/samples/crab_ZJetsToNuNu_HT-400to600.root 10.73
-/afs/cern.ch/work/k/kuchen/public/samples/crab_ZJetsToNuNu_HT-600to800.root 2.559
-/afs/cern.ch/work/k/kuchen/public/samples/crab_ZJetsToNuNu_HT-800to1200.root 0.28833
+/afs/cern.ch/work/k/kuchen/public/samples/crab_ZJetsToNuNu_HT-100to200.root 302.8
+/afs/cern.ch/work/k/kuchen/public/samples/crab_ZJetsToNuNu_HT-1200to2500.root 0.3419
+/afs/cern.ch/work/k/kuchen/public/samples/crab_ZJetsToNuNu_HT-200to400.root 92.59
+/afs/cern.ch/work/k/kuchen/public/samples/crab_ZJetsToNuNu_HT-2500toInf.root 0.005146
+/afs/cern.ch/work/k/kuchen/public/samples/crab_ZJetsToNuNu_HT-400to600.root 13.18
+/afs/cern.ch/work/k/kuchen/public/samples/crab_ZJetsToNuNu_HT-600to800.root 3.257
+/afs/cern.ch/work/k/kuchen/public/samples/crab_ZJetsToNuNu_HT-800to1200.root 1.49
