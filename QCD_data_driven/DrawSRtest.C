@@ -11,7 +11,7 @@
 using namespace std;
 
 bool isMC;
-bool isHalve = false; // entry = 0 use for fitting; entry = 1 used for N2B1 study
+bool isHalve; // entry = 0 use for fitting; entry = 1 used for N2B1 study
 template<typename T>
 void setDrawOpt(T& h,string title, string xTitle, string yTitle){
 	h->SetTitle(title.c_str());
@@ -253,9 +253,8 @@ void DrawSRtest(bool setisMC , bool setisHalve = false, int cuti = 0, int ncut=6
 	// for (int i=1; i<=6; i++){
 		// runCode(i,false);
 	// }
-	if (setisMC) isMC = true;
-	else isMC = false;
-	if (setisHalve ) isHalve = true;
+	isMC = setisMC;
+	isHalve = setisHalve;
 	runCode(cuti, ncut);
 
 }
