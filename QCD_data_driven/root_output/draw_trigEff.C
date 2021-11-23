@@ -3,7 +3,7 @@
 	we use off-line HT, trigger paths in tree
 */	
 bool isTest = false;
-bool useNoTrigResCut = false;
+bool useNoTrigResCut = true; // if applied, there is no fixed most event rich pre-scale
 using namespace std;
 void draw_trigEff(string inputname, string outputname){
 	TFile* fin = new TFile(inputname.data(),"READONLY");
@@ -42,12 +42,12 @@ void draw_trigEff(string inputname, string outputname){
 		for (auto x : LowEdge_) cout << x.first << " : " << x.second << endl;
 	}
 	
-	TH1F* hpass1;
-	hpass1 = new TH1F(prefixterm+"_180","",120,0,1200);
+	TH1F* hpass1[10];
 	TH1F* hpass2[10];
 	TH1F* hpass21[10];
 	for (int i=0; i<10;i++){
-		hpass2[i] = new TH1F(prefixterm+"_180_"+paths[i+1],"",120,0,1200);
+		hpass1[i] = new TH1F(prefixterm+paths[i+1]+"_180","",30,0,1500);
+		hpass2[i] = new TH1F(prefixterm+"_"+paths[i+1],"",30,0,1500);
 		hpass21[i] = (TH1F*) hpass2[i]->Clone(prefixterm+paths[i+1]+"_divide");
 	}
 	int total_entry = myRead.GetEntries(true);
@@ -70,12 +70,12 @@ void draw_trigEff(string inputname, string outputname){
 			}
 			selectedList.push_back(passTrigs[it]);
 		}
-		auto ifound = find(selectedList.begin(),selectedList.end(),180);
-		if (ifound != selectedList.end() ) {
-			hpass1->Fill(*HT_);
-			for(int i=0;i<10;i++){
-				ifound = find(selectedList.begin(),selectedList.end(), paths[i+1]);
-				if (ifound != selectedList.end() ) hpass2[i]->Fill(*HT_);
+		for (int i=0; i<10; i++){
+			auto ifound = find(selectedList.begin(),selectedList.end(),paths[i+1]); // start from the second one, the first one is denominator
+			if (ifound != selectedList.end() ) {
+				hpass2[i]->Fill(*HT_);
+				ifound = find(selectedList.begin(),selectedList.end(), 180);
+				if (ifound != selectedList.end() ) hpass1[i]->Fill(*HT_);
 			}
 		}
 	} // end of all entries
@@ -84,7 +84,7 @@ void draw_trigEff(string inputname, string outputname){
 		//TCanvas* c = new TCanvas("c","c");
 		TFile* fout = new TFile(outputname.data(),"RECREATE");
 		for (int i=0;i<10;i++){
-			hpass21[i]->Divide(hpass2[i],hpass1,1,1,"B");
+			hpass21[i]->Divide(hpass2[i],hpass1[i],1,1,"B");
 			//hpass21[i]->Draw();
 			//c->SaveAs(prefixterm+paths[i+1]+"_noMET.png");
 			hpass21[i]->Write();

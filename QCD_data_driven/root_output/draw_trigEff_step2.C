@@ -16,7 +16,7 @@ void setDrawOpt(T& h,string title, string xTitle, string yTitle){
 	h->SetYTitle(yTitle.c_str());
 }
 
-void draw_trigEff_step2(string inputlist){
+void draw_trigEff_step2(string inputlist,bool withLegend = true){
 	string histlist[9] = {"PFHT250_divide","PFHT370_divide","PFHT430_divide","PFHT510_divide", "PFHT590_divide", "PFHT680_divide","PFHT780_divide","PFHT890_divide","PFHT1050_divide"};
 
 
@@ -25,7 +25,7 @@ void draw_trigEff_step2(string inputlist){
 		string ifile;
 		ifstream infile(inputlist.data() );
 		gStyle->SetOptStat("");
-		TLegend legend(0.7,0.7,0.9,0.9);
+		TLegend legend(0.1,0.7,0.3,0.9);
 		TCanvas* c = new TCanvas("c","c");
 		while (getline(infile, ifile)){
 			colorN++;
@@ -37,9 +37,9 @@ void draw_trigEff_step2(string inputlist){
 			setDrawOpt(htmp,"","MET","");
 			c->cd();
 			htmp->Draw("SAME");
-			legend.AddEntry(htmp,histlist[i].data() );
+			legend.AddEntry(htmp,ifile.data() );
 		}
-		legend.Draw("SAME");
+		if (withLegend) legend.Draw("SAME");
 		c->SaveAs(Form("%s.png",histlist[i].data() ) );
 	}
 }
