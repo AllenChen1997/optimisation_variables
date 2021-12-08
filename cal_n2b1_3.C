@@ -44,12 +44,11 @@ using namespace std;
 
 // setup the running option //
 string n2ddtweight = "h_pt_rho_26";
-bool isN2DDTintuple = false; // true if "N2DDT" branch is already in the tuple
 string fN2weight = "TH3_output.root";
 bool isScanSignal = true;  string scanfileName = "signal_list.txt"; // if true, needs to setup the list filename
-string filesdir = "/afs/cern.ch/work/k/kuchen/public/samples/"; // if false, needs to setup this line and next line 
-string sig_root= filesdir+"EXO-ggToXdXdHToBB_sinp_0p35_tanb_1p0_mXd_10_MH3_1000_MH4_150_MH2_1000_MHC_1000_CP3Tune_13TeV.root";
-bool isN2 = true; int n2cut_id = 2; // true for N2 cut , false for N2DDT cut // cut_id 0 = 5%, 1 = 20%, 2=26%, 3 = 50%
+string filesdir = "/afs/cern.ch/work/k/kuchen/public/v06_00_05/";// if false, needs to setup this line and next line 
+string sig_root= filesdir+"crab_EXO-ggToXdXdHToBB_sinp_0p35_tanb_1p0_mXd_10_MH3_1000_MH4_150_MH2_1000_MHC_1000_CP3Tune_13TeV_0000_1.root";
+bool isN2 = false; int n2cut_id = 2; // true for N2 cut , false for N2DDT cut // cut_id 0 = 5%, 1 = 20%, 2=26%, 3 = 50%
 
 
 void run_(); // the main program, see below //
@@ -57,6 +56,7 @@ void cal_n2b1_3(){  // controlls the scan mode or run once mode
 	if (isScanSignal){
 		ifstream infile(scanfileName.c_str());
 		while (getline(infile,sig_root)){
+			cout << "running " << sig_root << endl;
 			run_();
 		}
 	} else {
@@ -123,7 +123,7 @@ void run_(){
 	h_rho_pt = (TH2D*) myfile->Get(n2ddtweight.c_str()); // cut value for N2DDT
 	
 	double N=0, count=0;
-	double eff_s,eff_s_origin,N_origin ,count_bkg=0,N_bkg=0;
+	double eff_s=0,eff_s_origin=0 ,count_bkg=0,N_bkg=0;
 
 	// QCD //
 		// there is no QCD because there is few event after preselection
