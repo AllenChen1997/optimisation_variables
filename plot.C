@@ -22,6 +22,7 @@
 #include <TAxis.h>
 
 #define NN2 20
+#define lumi 41000
 //#define MinN2 -0.2 // this is for n2DDT
 #define MinN2 0
 #define MaxN2 0.5
@@ -92,7 +93,7 @@ void plot(string inputf = "QCD_list_for_plot.txt"){
 			h_n2b1[i]->Fill(*n2b1);
 			h_n2b2[i]->Fill(*n2b2);
 			h_rho[i]->Fill(*rho);
-			if (*pt > -9999) h_jet1pt[i]->Fill(*pt);
+			if (*pt > -9999) h_jet1pt[i]->Fill(*pt);// there is some case pt will be -9999, like no pt
 			h_rhoN2b1->Fill(*rho,*n2b1);
 			h_rhoN2b2->Fill(*rho,*n2b2);
 			if (*rho > -2) n2b1_1->Fill(*n2b1);
@@ -102,6 +103,18 @@ void plot(string inputf = "QCD_list_for_plot.txt"){
 		fxs.push_back(s3);
 		i++; // count for the files with non zero entries in branch
 	} // end of loop all lines in file list, and i is total files which is not empty.(now is constant)
+	
+	TFile* fout = new TFile("QCD_n2b1_plot.root","RECREATE");
+	cout << "i = " << i << endl;
+	TH1F* h_n2b1_total = (TH1F*) h_n2b1[1]->Clone("h_n2b1_total"); 
+	h_n2b1_total->Reset("ICESM");
+	for (int j=0; j<i; j++){
+		h_n2b1[j]->Write();
+		h_n2b1_total->Add(h_n2b1[j],lumi*fxs[j]/(float)ftotalevent[j]);
+	}
+	h_n2b1_total->Write();
+	fout->Close();
+	
 	gStyle->SetOptStat("");
 	//gPad->SetLogy(1);
 	auto c0 = new TCanvas("c0","c0");
@@ -213,14 +226,5 @@ void plot(string inputf = "QCD_list_for_plot.txt"){
 		cout << x << " ";
 	}
 	cout << endl;
-	TFile* fout = new TFile("QCD_n2b1_plot.root","RECREATE");
-	cout << "i = " << i << endl;
-	TH1F* h_n2b1_total = (TH1F*) h_n2b1[1]->Clone("h_n2b1_total"); 
-	h_n2b1_total->Reset("ICESM");
-	for (int j=0; j<i; j++){
-		h_n2b1[j]->Write();
-		h_n2b1_total->Add(h_n2b1[j],fxs[j]);
-	}
-	h_n2b1_total->Write();
 
 }
