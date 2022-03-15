@@ -1,0 +1,2 @@
+#used for setup the list to ignore the files need to be checked by git
+*.png
