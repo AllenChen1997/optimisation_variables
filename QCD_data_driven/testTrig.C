@@ -58,7 +58,6 @@ void testTrig(string inputFile, string outfile){
 		//get TTree from file ...
 		TFile* myFile;
 		myFile = TFile::Open(line.data(), "READONLY" );
-		//TDirectory* td = (TDirectory*) myFile->Get("tree");
 		TTreeReader data("tree/treeMaker",myFile);
 		TTreeReaderValue< Int_t > nVtx(data, "nVtx");
 		TTreeReaderArray< string > trigName(data, "hlt_trigName");
@@ -72,22 +71,21 @@ void testTrig(string inputFile, string outfile){
 		TTreeReaderArray< float > THINjetPz(data, "THINjetPz");
 		TTreeReaderArray< float > THINjetEnergy(data, "THINjetEnergy");
 		
-		Long64_t nPass[20]={0};
 		int total_entry = data.GetEntries(true);
 		int jEntry = 0;
 
 		while (data.Next() ){
 			jEntry++;
-			cout << "\r";
-			if (isTest) cout <<  "Processing event " << jEntry << " of " << total_entry << endl;
-			else {
-				if (jEntry % 1000 == 0) cout <<  "Processing event " << jEntry << " of " << total_entry << flush;
-				else if (jEntry == total_entry) cout <<  "Processing event " << jEntry << " of " << total_entry << flush;
+			if (isTest) {
+				if (jEntry>100) break;
+				cout <<  "Processing event " << jEntry << " of " << total_entry << endl;
 			}
-			if (isTest) if(jEntry>100)break;
+			else {
+				if (jEntry % 1000 == 0) cout <<  "Processing event " << jEntry << " of " << total_entry << endl;
+				else if (jEntry == total_entry) cout <<  "Processing event " << jEntry << " of " << total_entry << endl;
+			}
 			//0. has a good vertex
 			if(*nVtx<1)continue;
-			nPass[0]++;
 
 			//1. ak4Jet
 			vector<TLorentzVector> ak4_eta_3p0_pt_20; 
@@ -109,8 +107,6 @@ void testTrig(string inputFile, string outfile){
 			HT_MET = HT_noMET + *METPT;
 			
 			//2. trigger 
-			bool passTrigger=false;
-			//vector<string> aPassTrigList;
 			int it = -1;
 			for(auto iter=trigResult.begin(); iter< trigResult.end(); iter++)
 			{
@@ -134,7 +130,7 @@ void testTrig(string inputFile, string outfile){
 				if (PFHT_names[trigPath] == nullptr){
 					TH1F* tmph = new TH1F(trigPath.data(),trigPath.data() ,110,0,1100);
 					PFHT_names[trigPath] = tmph;
-					string newName = trigPath+"_";
+					string newName = trigPath+"_noResCut";
 					TH1F* tmph2 = (TH1F*)tmph->Clone(newName.data());
 					PFHT_names_noResCut[trigPath] = tmph2;
 				}
