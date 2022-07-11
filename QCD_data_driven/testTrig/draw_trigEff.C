@@ -2,9 +2,24 @@
 	this code is build for letting trigger efficiency -> 100%
 	we use off-line HT, trigger paths in tree
 */	
+
+using namespace std;
+
 bool isTest = false;
 bool useNoTrigResCut = true; // if applied, there is no fixed most event rich pre-scale
-using namespace std;
+
+template<typename T>
+void setDrawOpt(T& h,string title, string xTitle, string yTitle){
+	h->SetTitle(title.c_str());
+	h->SetTitleSize(0.07);
+	h->GetXaxis()->SetLabelSize(0.05);
+	h->GetXaxis()->SetTitleSize(0.05);
+	h->GetYaxis()->SetLabelSize(0.05);
+	h->GetYaxis()->SetTitleSize(0.05);
+	h->SetXTitle(xTitle.c_str());
+	h->SetYTitle(yTitle.c_str());
+}
+
 void draw_trigEff(string inputname, string outputname){
 	TFile* fin = new TFile(inputname.data(),"READONLY");
 	TTreeReader myRead("tree",fin);
@@ -54,14 +69,17 @@ void draw_trigEff(string inputname, string outputname){
 	int jEntry = 0;
 	while(myRead.Next() ){
 		jEntry++;
-		//cout << "\r";
-		if (isTest) cout <<  "Processing event " << jEntry << " of " << total_entry << endl;
+		//show the status of run loop
+		if (isTest) {
+			if (jEntry>100) break;
+			cout <<  "Processing event " << jEntry << " of " << total_entry << endl;
+		}
 		else {
 			if (jEntry % 10000 == 0) cout <<  "Processing event " << jEntry << " of " << total_entry << endl;
 			else if (jEntry == total_entry) cout <<  "Processing event " << jEntry << " of " << total_entry << endl;
 		}
-		if (isTest) if(jEntry>100)break;
-		vector<int> selectedList;
+		
+		vector<int> selectedList; // the list of prescales which in the 
 		for (int it=0; it<*nPassTrig; it++){ // we need to keep the most event prescales
 			if (! useNoTrigResCut){
 				if (prescales[it] < LowEdge[passTrigs[it]] || prescales[it] > HighEdge[passTrigs[it]] ) continue;
@@ -70,12 +88,12 @@ void draw_trigEff(string inputname, string outputname){
 			}
 			selectedList.push_back(passTrigs[it]);
 		}
-		for (int i=0; i<10; i++){
-			auto ifound = find(selectedList.begin(),selectedList.end(),paths[i+1]); // start from the second one, the first one is denominator
+		for (int i=0; i<sizeof(paths)/sizeof(paths[0])-1 ; i++){
+			auto ifound = find(selectedList.begin(),selectedList.end(),180); // start from the second one, the first one is denominator
 			if (ifound != selectedList.end() ) {
-				hpass2[i]->Fill(*HT_);
-				ifound = find(selectedList.begin(),selectedList.end(), 180);
-				if (ifound != selectedList.end() ) hpass1[i]->Fill(*HT_);
+				hpass1[i]->Fill(*HT_);
+				ifound = find(selectedList.begin(),selectedList.end(), paths[i+1]);
+				if (ifound != selectedList.end() ) hpass2[i]->Fill(*HT_);
 			}
 		}
 	} // end of all entries
@@ -83,7 +101,7 @@ void draw_trigEff(string inputname, string outputname){
 	if( ! isTest) {
 		//TCanvas* c = new TCanvas("c","c");
 		TFile* fout = new TFile(outputname.data(),"RECREATE");
-		for (int i=0;i<10;i++){
+		for (int i=0; i<sizeof(paths)/sizeof(paths[0]) ;i++){
 			hpass21[i]->Divide(hpass2[i],hpass1[i],1,1,"B");
 			//hpass21[i]->Draw();
 			//c->SaveAs(prefixterm+paths[i+1]+"_noMET.png");

@@ -19,25 +19,34 @@ void setDrawOpt(T& h,string title, string xTitle, string yTitle){
 void draw_trigEff_step2(string inputlist,bool withLegend = true){
 	string histlist[9] = {"PFHT250_divide","PFHT370_divide","PFHT430_divide","PFHT510_divide", "PFHT590_divide", "PFHT680_divide","PFHT780_divide","PFHT890_divide","PFHT1050_divide"};
 
-
 	for (int i=0;i<9;i++){
 		int colorN =0;
-		string ifile;
+		string line;
+		stringstream ss;
+		string ifile, ilegend;
 		ifstream infile(inputlist.data() );
 		gStyle->SetOptStat("");
 		TLegend legend(0.1,0.7,0.3,0.9);
 		TCanvas* c = new TCanvas("c","c");
-		while (getline(infile, ifile)){
+		while (getline(infile, line)){
+			ifile = "";
+			ilegend = "";
+			ss << line; // using ss to split one line into two strings
+			ss >> ifile >> ilegend;
+			ss.clear();
+			if (ifile.empty() ) continue;
+			if (ilegend.empty() ) withLegend = false;
 			colorN++;
+			if (colorN == 5) colorN++;
 			cout << "Reading " << ifile << endl;
 			TFile* myFile;
 			myFile = TFile::Open(ifile.data(),"READONLY");
 			TH1F* htmp = (TH1F*) myFile->Get(histlist[i].data() );
 			htmp->SetLineColor(colorN);
-			setDrawOpt(htmp,"","MET","");
+			setDrawOpt(htmp,"","HT","");
 			c->cd();
 			htmp->Draw("SAME");
-			legend.AddEntry(htmp,ifile.data() );
+			legend.AddEntry(htmp,ilegend.data() );
 		}
 		if (withLegend) legend.Draw("SAME");
 		c->SaveAs(Form("%s.png",histlist[i].data() ) );
