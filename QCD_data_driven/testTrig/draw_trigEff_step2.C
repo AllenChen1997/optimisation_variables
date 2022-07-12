@@ -16,7 +16,7 @@ void setDrawOpt(T& h,string title, string xTitle, string yTitle){
 	h->SetYTitle(yTitle.c_str());
 }
 
-void draw_trigEff_step2(string inputlist,bool withLegend = true){
+void draw_trigEff_step2(string inputlist="list_draw_step2.txt",bool withLegend = true){
 	string histlist[9] = {"PFHT250_divide","PFHT370_divide","PFHT430_divide","PFHT510_divide", "PFHT590_divide", "PFHT680_divide","PFHT780_divide","PFHT890_divide","PFHT1050_divide"};
 
 	for (int i=0;i<9;i++){

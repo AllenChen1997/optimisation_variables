@@ -41,6 +41,8 @@ void run_code(string inputfile, string outfile, bool isTest = false, bool isAppl
 	float metpT;
 	int weight;
 	vector<bool> cuts;
+	vector<float> DDB;
+	vector<float> N2B1; 
 	TFile* fout = new TFile(outfile.data(),"UPDATE");
 	TTree ot("tree","vars");
 	ot.Branch("mindphi",&mindphi);
@@ -48,6 +50,9 @@ void run_code(string inputfile, string outfile, bool isTest = false, bool isAppl
 	ot.Branch("whichHT",&whichHT);
 	ot.Branch("metpT",&metpT);
 	ot.Branch("weight",&weight);
+	ot.Branch("DDB",&DDB);
+	ot.Branch("N2B1",&N2B1);
+	
 
 	for (int i=0; i< sizeof(h_met_mindphi_l)/sizeof(h_met_mindphi_l[0]); i++){
 		h_met_mindphi_l[i] = new TH1F(Form("h_met_mindphi_l%s_%i",subline.c_str(),i),"",15,xbins);
@@ -84,8 +89,8 @@ void run_code(string inputfile, string outfile, bool isTest = false, bool isAppl
 		TTreeReaderArray< Float_t > fatJPy(data, "FATjetPy");
 		TTreeReaderArray< Float_t > fatJPz(data, "FATjetPz");
 		TTreeReaderArray< Float_t > fatJE(data, "FATjetEnergy");
-		TTreeReaderArray< Float_t > N2B1(data, "FATN2_Beta1_"); // N2B1
-		TTreeReaderArray< Float_t > DDB(data, "FATjet_probHbb"); // DDB
+		TTreeReaderArray< Float_t > N2B1_(data, "FATN2_Beta1_"); // N2B1
+		TTreeReaderArray< Float_t > DDB_(data, "FATjet_probHbb"); // DDB
 		  // gen particle //
 		TTreeReaderValue< Int_t > nPar(data, "nGenPar");
 		TTreeReaderArray< Int_t > parState(data, "genParSt");
@@ -300,6 +305,8 @@ void run_code(string inputfile, string outfile, bool isTest = false, bool isAppl
 			bool MET_triggerState = (HLT_PFMETNoMu120_PFMHTNoMu120_IDTight_PFHT60 || HLT_PFMETNoMu120_PFMHTNoMu120_IDTight ||HLT_PFMETNoMu140_PFMHTNoMu140_IDTight);
 			
 			//6. fatJet identify //
+			N2B1.clear();
+			DDB.clear();
 			vector<TLorentzVector> passFatJ;
 			for (int ij=0; ij<(int)*nfj; ij++){
 				TLorentzVector tmpTLFatJ;
@@ -311,6 +318,10 @@ void run_code(string inputfile, string outfile, bool isTest = false, bool isAppl
 				if (fjPt <= 200 ) continue;
 				if (fjMass < 100 || fjMass > 150 ) continue;
 				passFatJ.push_back(tmpTLFatJ);
+				
+				// only keep N2B1 and DDB which fatJ pass basic cuts
+				N2B1.push_back(N2B1_[ij]);
+				DDB.push_back(DDB_[ij]);
 			}// end loop of fj
 			
 			//7. ak4Jet
@@ -430,8 +441,9 @@ void run_code(string inputfile, string outfile, bool isTest = false, bool isAppl
 			ot.Fill();
 		} // end of entries
 	}// end of file list
-	/*TFile* fout = new TFile(outfile.data(),"UPDATE");
-	for (int i=0; i<sizeof(h_met_mindphi_s) / sizeof(h_met_mindphi_s[0]); i++ ){
+	//TFile* fout = new TFile(outfile.data(),"UPDATE");
+	fout->cd();
+	/*for (int i=0; i<sizeof(h_met_mindphi_s) / sizeof(h_met_mindphi_s[0]); i++ ){
 		h_met_mindphi_s[i]->Write();
 		h_met_mindphi_l[i]->Write();
 		h_dphi[i]->Write();
@@ -442,14 +454,14 @@ void run_code(string inputfile, string outfile, bool isTest = false, bool isAppl
 	if (isApplySR) h_cutFlow->Write();
 	//h_MET_HTcut->Write();
 	*/
-	fout->cd();
+	
 	ot.Write();
 	fout->Close();
 }
 
-void GetRfunction_multi(string inputfile, string outfile, bool isTest = false){
+void GetRfunction_MC(string inputfile, string outfile, bool isTest = false){
 	//run_code(inputfile,outfile,isTest,true,true); //for last two isApplySR , isSplit
 	//run_code(inputfile,outfile,isTest,false,true); 
-	run_code(inputfile,outfile,isTest,true,false); 
+	run_code(inputfile,outfile,isTest,true,false); //run_code(string inputfile, string outfile, bool isTest = false, bool isApplySR = true, bool isSplit = false)
 }
 	
