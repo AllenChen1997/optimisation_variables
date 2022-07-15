@@ -18,48 +18,31 @@ bool pt_greater(const TLorentzVector& a, const TLorentzVector& b){
 	return (a.Pt() > b.Pt());
 }
 
-void run_code(string inputfile, string outfile, bool isTest = false, bool isApplySR = true, bool isSplit = false){
+void run_code(string inputfile, string outfile, bool isTest = false){
 	Double_t xbins[16] = {0, 25, 50, 75, 100, 125, 150, 175, 200, 250, 300, 350, 400, 500, 600, 1000};
 	int HTUseRange[7] = {200, 300, 500, 600, 750, 1200, 100000};
 	int totalNRange = sizeof(HTUseRange) / sizeof(HTUseRange[0]);
 	// things to output //
-	string subline = "";
-	if (isApplySR) subline = "_withSR";
-	
-	TH1F* h_met_mindphi_l[6];
-	TH1F* h_met_mindphi_s[6];
-	TH1F* h_MET_[6];
-	//TH1F* h_MET_HTcut = (TH1F*) h_MET_->Clone("h_HTcut_MET");
-	TH1F* h_mc_weight = new TH1F(Form("h_mc_weight%s",subline.c_str() ),"",3,-1,2);
-	TH1F* h_dphi[6];
-	TH1F* h_HT = new TH1F(Form("h_HT%s",subline.c_str() ),"",200,0,2000);
-	TH1F* h_cutFlow = new TH1F(Form("h_cutFlow%s",subline.c_str() ),"",10,0,10); // check the SR cuts
+	TH1F* h_cutFlow = new TH1F("h_cutFlow","",7,0,7); // the cutflow plots
+	string cutFlowLabel[7] = {"incl","tauVeto","photonVeto","EleVeto","LooseMuVeto","extraAk4","nFatJ"};	
 	
 	// output tree //
 	float mindphi;
 	int whichHT;
 	float metpT;
 	int weight;
-	vector<bool> cuts;
 	vector<float> DDB;
 	vector<float> N2B1; 
-	TFile* fout = new TFile(outfile.data(),"UPDATE");
+	
+	TFile* fout = new TFile(outfile.data() ,"RECREATE");
 	TTree ot("tree","vars");
 	ot.Branch("mindphi",&mindphi);
-	ot.Branch("cuts",&cuts);
 	ot.Branch("whichHT",&whichHT);
 	ot.Branch("metpT",&metpT);
 	ot.Branch("weight",&weight);
 	ot.Branch("DDB",&DDB);
 	ot.Branch("N2B1",&N2B1);
 	
-
-	for (int i=0; i< sizeof(h_met_mindphi_l)/sizeof(h_met_mindphi_l[0]); i++){
-		h_met_mindphi_l[i] = new TH1F(Form("h_met_mindphi_l%s_%i",subline.c_str(),i),"",15,xbins);
-		h_met_mindphi_s[i] = (TH1F*) h_met_mindphi_l[i]->Clone(Form("h_met_mindphi_s%s_%i",subline.c_str(),i));
-		h_dphi[i] =  new TH1F(Form("h_dphi%s_%i",subline.c_str(),i),"",10,0,pi);
-		h_MET_[i] = new TH1F(Form("h_no_HTcut_MET%s_%i",subline.c_str(),i),"",150,0,1500);
-	}
 	// load file list //
 	string line;
 	ifstream flist(inputfile.data() );
@@ -135,21 +118,20 @@ void run_code(string inputfile, string outfile, bool isTest = false, bool isAppl
 		while (data.Next() ){
 			// make event process counter //
 			jEntry++;
-			if (isSplit) {
-				if (jEntry%2 == 0 && isApplySR) continue;
-				if (jEntry%2 == 1 && ! isApplySR) continue;
-			}
-			if (isTest) cout <<  "Processing event " << jEntry << " of " << total_entry << endl;
-			else {
+			N2B1.clear();
+			DDB.clear();
+
+			if (isTest){
+				if (jEntry>100) break;
+				cout <<  "Processing event " << jEntry << " of " << total_entry << endl;
+			}else {
 				if (jEntry % 1000 == 0) cout <<  "Processing event " << jEntry << " of " << total_entry << endl;
 				else if (jEntry == total_entry) cout <<  "Processing event " << jEntry << " of " << total_entry << endl;
 			}
-			if (isTest) if(jEntry>100)break;
 			
 			weight = 0;
 			if (*mcWeight > 0) weight = 1;
 			else weight = -1;
-			h_mc_weight->Fill(weight);
 			//0. has a good vertex
 			if(*nVtx<1)continue;
 			
@@ -305,8 +287,6 @@ void run_code(string inputfile, string outfile, bool isTest = false, bool isAppl
 			bool MET_triggerState = (HLT_PFMETNoMu120_PFMHTNoMu120_IDTight_PFHT60 || HLT_PFMETNoMu120_PFMHTNoMu120_IDTight ||HLT_PFMETNoMu140_PFMHTNoMu140_IDTight);
 			
 			//6. fatJet identify //
-			N2B1.clear();
-			DDB.clear();
 			vector<TLorentzVector> passFatJ;
 			for (int ij=0; ij<(int)*nfj; ij++){
 				TLorentzVector tmpTLFatJ;
@@ -377,7 +357,6 @@ void run_code(string inputfile, string outfile, bool isTest = false, bool isAppl
 			//7.2 apply mindphi && addtional ak4 jet test(<=2)
 			int nExtraAk4 = 0;
 			mindphi = 999;
-			float nLeadingJ = 0;
 			for (auto x : ak4_eta_3p0_pt_20){
 				// additional ak4_jet 
 				if (passFatJ.size() == 1){
@@ -386,82 +365,44 @@ void run_code(string inputfile, string outfile, bool isTest = false, bool isAppl
 				}
 				// min dphi
 				float tmpdPhi = cal_dphi(*METPhi,x.Phi() );
-				h_dphi[whichHT]->Fill(tmpdPhi);
 				if (mindphi > tmpdPhi) mindphi = tmpdPhi;
-				nLeadingJ++;
-				//if (nLeadingJ == 4) break; // take only 4 leading jet to calculate mindphi
 			}
-			//8. do the cut
-			/* skip in this iter. try to study these cuts
-			if (isApplySR){
-				h_cutFlow->Fill(0);
-				if (! METState && ! ZRecoilState && ! WRecoilState && ! GammaRecoilState) continue;
-				h_cutFlow->Fill(1);
-				if (! MET_triggerState) continue;
-				h_cutFlow->Fill(2);
-				if (*METPT <= 200) continue;
-				h_cutFlow->Fill(3);
-				if (passTau_againstLep.size() > 0) continue;
-				h_cutFlow->Fill(4);
-				if (passPho.size() > 0) continue;
-				h_cutFlow->Fill(5);
-				if (passEle.size() > 0) continue;
-				h_cutFlow->Fill(6);
-				if (passLooseMu.size() > 0)continue;
-				h_cutFlow->Fill(7);
-				if (nExtraAk4 > 2 ) continue;
-				h_cutFlow->Fill(8);
-				if (passFatJ.size() != 1 ) continue;
-				h_cutFlow->Fill(9);
-			}
-			*/
 			// there are six cuts now.
-			cuts.clear();
-			if (passTau_againstLep.size() > 0) cuts.push_back(false);
-			else cuts.push_back(true);
-			if (passPho.size() > 0) cuts.push_back(false);
-			else cuts.push_back(true);
-			if (passEle.size() > 0) cuts.push_back(false);
-			else cuts.push_back(true);
-			if (passLooseMu.size() > 0) cuts.push_back(false);
-			else cuts.push_back(true);
-			if (nExtraAk4 > 2 ) cuts.push_back(false);
-			else cuts.push_back(true);
-			if (passFatJ.size() != 1 ) cuts.push_back(false);
-			else cuts.push_back(true);
+			h_cutFlow->Fill(0);
+			if (passTau_againstLep.size() > 0) continue;
+			h_cutFlow->Fill(1);
+			if (passPho.size() > 0) continue;
+			h_cutFlow->Fill(2);
+			if (passEle.size() > 0) continue;
+			h_cutFlow->Fill(3);
+			if (passLooseMu.size() > 0) continue;
+			h_cutFlow->Fill(4);
+			if (nExtraAk4 > 2 ) continue;
+			h_cutFlow->Fill(5);
+			if (passFatJ.size() != 1 ) continue;
+			h_cutFlow->Fill(6);
 			
 			//if (mindphi == 999) continue; // 999 means there is no ak4j
-			h_HT->Fill(offline_HT);
-			h_MET_[whichHT]->Fill(*METPT);
 			//if (offline_HT > 200) h_MET_HTcut->Fill(*METPT);
-			if (mindphi > 0.4) h_met_mindphi_l[whichHT]->Fill(*METPT);
-			else h_met_mindphi_s[whichHT]->Fill(*METPT);
-			
+
 			metpT = *METPT;
 			ot.Fill();
 		} // end of entries
 	}// end of file list
-	//TFile* fout = new TFile(outfile.data(),"UPDATE");
-	fout->cd();
-	/*for (int i=0; i<sizeof(h_met_mindphi_s) / sizeof(h_met_mindphi_s[0]); i++ ){
-		h_met_mindphi_s[i]->Write();
-		h_met_mindphi_l[i]->Write();
-		h_dphi[i]->Write();
-		h_MET_[i]->Write();
-	}
-	h_mc_weight->Write();
-	h_HT->Write();
-	if (isApplySR) h_cutFlow->Write();
-	//h_MET_HTcut->Write();
-	*/
 	
+	fout->cd();
 	ot.Write();
+	h_cutFlow->Write();
 	fout->Close();
+	
+	// release the histograms
+	h_cutFlow->Clear();
+	
 }
 
 void GetRfunction_MC(string inputfile, string outfile, bool isTest = false){
-	//run_code(inputfile,outfile,isTest,true,true); //for last two isApplySR , isSplit
-	//run_code(inputfile,outfile,isTest,false,true); 
-	run_code(inputfile,outfile,isTest,true,false); //run_code(string inputfile, string outfile, bool isTest = false, bool isApplySR = true, bool isSplit = false)
+	
+	run_code(inputfile,outfile,isTest); //for last one, isSplit
+	
 }
 	
