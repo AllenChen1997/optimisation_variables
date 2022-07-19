@@ -6,7 +6,7 @@
 using namespace std;
 
 bool isTest = false;
-bool useNoTrigResCut = true; // if applied, there is no fixed most event rich pre-scale
+bool useNoTrigResCut = false; // if applied, there is no fixed most event rich pre-scale
 
 template<typename T>
 void setDrawOpt(T& h,string title, string xTitle, string yTitle){
@@ -44,7 +44,7 @@ void draw_trigEff(string inputname, string outputname){
 			HighEdge[paths[i]] = tmph->GetBinLowEdge(nmaxBin+1);
 		}
 		if (useNoTrigResCut || isTest){
-			TH1F* tmph2 = (TH1F*) fin->Get(prefixterm+paths[i]+"_");
+			TH1F* tmph2 = (TH1F*) fin->Get(prefixterm+paths[i]+"_noResCut");
 			int nmaxBin = tmph2->GetMaximumBin();
 			LowEdge_[paths[i]] = tmph2->GetBinLowEdge(nmaxBin);
 			HighEdge_[paths[i]] = tmph2->GetBinLowEdge(nmaxBin+1);

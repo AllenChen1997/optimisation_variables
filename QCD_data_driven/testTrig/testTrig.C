@@ -123,7 +123,7 @@ void testTrig(string inputFile, string outfile){
 				while(getline(ss,trigPath,'_')){
 					counterT++;
 					if (counterT == 2) break; // the key word always in the second place by the delimiter "_"
-				} // now trigPath should be PFHT180 or some other numbers 370, 390 ...
+				} // now trigPath should be PFHT180 or some other numbers PFHT370, PFHT390 ...
 				ss.clear();
 				// check all prescale distribution in each triger path // 
 				int iprescale = prescale[it];
