@@ -89,7 +89,7 @@ void draw_trigEff(string inputname, string outputname){
 	if( ! isTest) {
 		//TCanvas* c = new TCanvas("c","c");
 		TFile* fout = new TFile(outputname.data(),"RECREATE");
-		for (int i=0; i<sizeof(paths)/sizeof(paths[0]) ;i++){
+		for (int i=0; i<sizeof(hpass1)/sizeof(hpass1[0]) ;i++){
 			hpass21[i]->Divide(hpass2[i],hpass1[i],1,1,"B");
 			//hpass21[i]->Draw();
 			//c->SaveAs(prefixterm+paths[i+1]+"_noMET.png");
