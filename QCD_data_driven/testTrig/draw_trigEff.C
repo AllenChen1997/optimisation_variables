@@ -6,7 +6,6 @@
 using namespace std;
 
 bool isTest = false;
-bool useNoTrigResCut = false; // if applied, there is no fixed most event rich pre-scale
 
 template<typename T>
 void setDrawOpt(T& h,string title, string xTitle, string yTitle){
@@ -29,33 +28,26 @@ void draw_trigEff(string inputname, string outputname){
 	TTreeReaderArray< int > passTrigs(myRead,"passTrigList");
 	TTreeReaderArray< int > prescales(myRead,"prescaleList");
 	
+	ofstream textout("prescaleRich.txt",std::ofstream::app);
+	
 	TString prefixterm = "PFHT";
 	int paths[11] = {180, 250, 350, 370, 430, 510, 590, 680, 780, 890, 1050};
 	map<int, int> LowEdge;
-	map<int, int> HighEdge;
-	map<int, int> LowEdge_;  // with underscope mean there is no trigger result cut (= 1)
-	map<int, int> HighEdge_;
 	// get what path + prescale we need
 	for (int i=0; i<11; i++){
-		if (! useNoTrigResCut || isTest){
-			TH1F* tmph = (TH1F*) fin->Get(prefixterm+paths[i]);
-			int nmaxBin = tmph->GetMaximumBin();
-			LowEdge[paths[i]] = tmph->GetBinLowEdge(nmaxBin);
-			HighEdge[paths[i]] = tmph->GetBinLowEdge(nmaxBin+1);
-		}
-		if (useNoTrigResCut || isTest){
-			TH1F* tmph2 = (TH1F*) fin->Get(prefixterm+paths[i]+"_noResCut");
-			int nmaxBin = tmph2->GetMaximumBin();
-			LowEdge_[paths[i]] = tmph2->GetBinLowEdge(nmaxBin);
-			HighEdge_[paths[i]] = tmph2->GetBinLowEdge(nmaxBin+1);
-		}
+		TH1F* tmph = (TH1F*) fin->Get(prefixterm+paths[i]);
+		int nmaxBin = tmph->GetMaximumBin();
+		LowEdge[paths[i]] = tmph->GetBinLowEdge(nmaxBin);
 	}
 	
 	if (isTest){
 		for (auto x : LowEdge) cout << x.first << " : " << x.second << endl;
-		cout << "without trigger result cut" << endl;
-		for (auto x : LowEdge_) cout << x.first << " : " << x.second << endl;
 	}
+	textout << inputname.data() << ":" << endl;
+	for (auto x : LowEdge) {
+		textout << x.first << " : " << x.second << endl;
+	}
+	textout.close();
 	
 	TH1F* hpass1[10];
 	TH1F* hpass2[10];
@@ -81,11 +73,7 @@ void draw_trigEff(string inputname, string outputname){
 		
 		vector<int> selectedList; // the list of prescales which in the 
 		for (int it=0; it<*nPassTrig; it++){ // we need to keep the most event prescales
-			if (! useNoTrigResCut){
-				if (prescales[it] < LowEdge[passTrigs[it]] || prescales[it] > HighEdge[passTrigs[it]] ) continue;
-			} else {
-				if (prescales[it] < LowEdge_[passTrigs[it]] || prescales[it] > HighEdge_[passTrigs[it]] ) continue;
-			}
+			if (prescales[it] != LowEdge[passTrigs[it]] ) continue;
 			selectedList.push_back(passTrigs[it]);
 		}
 		for (int i=0; i<sizeof(paths)/sizeof(paths[0])-1 ; i++){
