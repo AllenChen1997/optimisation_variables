@@ -32,7 +32,6 @@ void savehist(map<string, map<int, TH1F* > > m, bool isprint){
 void testTrig(string inputFile, string outfile){
 	// data collection STLs
 	map<string, TH1F*> PFHT_names;
-	map<string, TH1F*> PFHT_names_noResCut;
 	map<string, map< int, TH1F* > > PFHT_prescale_MET;
 	map<string, map< int, TH1F* > > PFHT_prescale_HTwMET;
 	map<string, map< int, TH1F* > > PFHT_prescale_HTnoMET;
@@ -128,13 +127,9 @@ void testTrig(string inputFile, string outfile){
 				// check all prescale distribution in each triger path // 
 				int iprescale = prescale[it];
 				if (PFHT_names[trigPath] == nullptr){
-					TH1F* tmph = new TH1F(trigPath.data(),trigPath.data() ,110,0,1100);
+					TH1F* tmph = new TH1F(trigPath.data(),trigPath.data() ,1400,0,1400);
 					PFHT_names[trigPath] = tmph;
-					string newName = trigPath+"_noResCut";
-					TH1F* tmph2 = (TH1F*)tmph->Clone(newName.data());
-					PFHT_names_noResCut[trigPath] = tmph2;
 				}
-				PFHT_names_noResCut[trigPath]->Fill(iprescale);
 				
 				if (results != 1) continue;
 				PFHT_names[trigPath]->Fill(iprescale);
@@ -179,13 +174,12 @@ void testTrig(string inputFile, string outfile){
 	
 	// print out the list of prescale
 	cout << endl;
-	cout << " ////// pre-scale list ///// " << endl;
+	//cout << " ////// pre-scale list ///// " << endl;
 	savehist(PFHT_prescale_MET,true);
 	savehist(PFHT_prescale_HTwMET,false);
 	savehist(PFHT_prescale_HTnoMET,false);
 
 	for (auto x : PFHT_names)  x.second->Write();
-	for (auto x : PFHT_names_noResCut)  x.second->Write();
 	outTree.Write();
 	fout->Close();
 	  
