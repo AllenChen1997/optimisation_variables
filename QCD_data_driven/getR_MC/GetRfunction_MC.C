@@ -6,7 +6,7 @@
 */
 /////////////   change able array  /////////////////
 
-Double_t HTUseRange[6] = {200, 300, 700, 800, 1200}; // [ 200, 300, 500, 600, 750, 1200, inf ]
+Double_t HTUseRange[5] = {200, 300, 700, 800, 1200}; // [ 200, 300, 500, 600, 750, 1200, inf ]
 
 ////////////////////////////////////////////////////
 
@@ -402,6 +402,7 @@ void run_code(string inputfile, string outfile, bool isTest = false){
 	fout->cd();
 	ot.Write();
 	h_cutFlow->Write();
+	h_HTRange->Write();
 	fout->Close();
 	
 	// release the histograms
