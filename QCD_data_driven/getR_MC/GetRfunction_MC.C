@@ -4,6 +4,12 @@
 	using ExoPieElement output dataTemplate
 	the output will be tree with cuts flag.
 */
+/////////////   change able array  /////////////////
+
+Double_t HTUseRange[6] = {200, 300, 700, 800, 1200}; // [ 200, 300, 500, 600, 750, 1200, inf ]
+
+////////////////////////////////////////////////////
+
 using namespace std;
 float pi = TMath::Pi();
 
@@ -20,12 +26,11 @@ bool pt_greater(const TLorentzVector& a, const TLorentzVector& b){
 
 void run_code(string inputfile, string outfile, bool isTest = false){
 	Double_t xbins[16] = {0, 25, 50, 75, 100, 125, 150, 175, 200, 250, 300, 350, 400, 500, 600, 1000};
-	int HTUseRange[7] = {200, 300, 500, 600, 750, 1200, 100000};
 	int totalNRange = sizeof(HTUseRange) / sizeof(HTUseRange[0]);
 	// things to output //
-	TH1F* h_cutFlow = new TH1F("h_cutFlow","",7,0,7); // the cutflow plots
-	string cutFlowLabel[7] = {"incl","tauVeto","photonVeto","EleVeto","LooseMuVeto","extraAk4","nFatJ"};	
-	
+	TH1F* h_cutFlow = new TH1F("h_cutFlow","",10,0,10); // the cutflow plots
+	string cutFlowLabel[10] = {"incl","tauVeto","photonVeto","EleVeto","LooseMuVeto","extraAk4","nFatJ","hasN2B1","HTRegion","atleast1AK4"};	
+	TH1F* h_HTRange = new TH1F("h_HTRange","",totalNRange-1,HTUseRange);
 	// output tree //
 	float mindphi;
 	int whichHT;
@@ -353,6 +358,7 @@ void run_code(string inputfile, string outfile, bool isTest = false){
 						break;
 					}
 				}
+				if (offline_HT > HTUseRange[totalNRange-1]) whichHT = totalNRange-1;
 			}
 			//7.2 apply mindphi && addtional ak4 jet test(<=2)
 			int nExtraAk4 = 0;
@@ -381,9 +387,12 @@ void run_code(string inputfile, string outfile, bool isTest = false){
 			h_cutFlow->Fill(5);
 			if (passFatJ.size() != 1 ) continue;
 			h_cutFlow->Fill(6);
-			
-			//if (mindphi == 999) continue; // 999 means there is no ak4j
-			//if (offline_HT > 200) h_MET_HTcut->Fill(*METPT);
+			if (N2B1[0] < 0) continue; // after exact 1 fatj cut, we only have 1 N2B1 
+			h_cutFlow->Fill(7);
+			if (whichHT < 0) continue; // we don't need the event out of HT range 
+			h_cutFlow->Fill(8);
+			if (mindphi == 999) continue; // 999 means there is no ak4j
+			h_cutFlow->Fill(9);
 
 			metpT = *METPT;
 			ot.Fill();
