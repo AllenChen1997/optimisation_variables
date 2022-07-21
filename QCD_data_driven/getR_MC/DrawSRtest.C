@@ -146,7 +146,8 @@ void runCode(bool isTest = false){
 		
 		
 		gStyle->SetOptStat("");
-		
+		string tmpOutputName;
+		if (isMC) tmpOutputName = outputMCname[iFile];		
 		// draw the cutflow plot
 		TCanvas* c2 = new TCanvas("c2","c2");
 		for (int ilabel=0; ilabel<sizeof(cutFlowLabel)/sizeof(cutFlowLabel[0]); ilabel++){
@@ -157,8 +158,7 @@ void runCode(bool isTest = false){
 		
 		// draw the map of mindphi larger than 0.4 or smaller 0.4
 		TCanvas* c3 = new TCanvas("c3","c3");
-		string tmpOutputName;
-		if (isMC) tmpOutputName = outputMCname[iFile];
+
 		else tmpOutputName = outputDataname;
 		h_map_l->Draw("COLZ");
 		c3->SaveAs(Form("map_l_withSR_%s.png",tmpOutputName.data() ) );
