@@ -29,7 +29,6 @@ void draw_trigEff(string inputname, string outputname){
 	TTreeReaderArray< int > prescales(myRead,"prescaleList");
 	
 	ofstream textout("prescaleRich.txt",std::ofstream::app);
-	
 	TString prefixterm = "PFHT";
 	int paths[11] = {180, 250, 350, 370, 430, 510, 590, 680, 780, 890, 1050};
 	map<int, int> LowEdge;
