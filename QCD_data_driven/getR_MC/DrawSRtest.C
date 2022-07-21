@@ -152,7 +152,7 @@ void runCode(bool isTest = false){
 		// draw the cutflow plot
 		TCanvas* c2 = new TCanvas("c2","c2");
 		for (int ilabel=0; ilabel<sizeof(cutFlowLabel)/sizeof(cutFlowLabel[0]); ilabel++){
-			h_cutFlow->GetXaxis()->SetBinLabel(ilabel,cutFlowLabel[ilabel].data() );	
+			h_cutFlow->GetXaxis()->SetBinLabel(ilabel+1,cutFlowLabel[ilabel].data() );	
 		}
 		h_cutFlow->Draw();
 		c2->SaveAs(Form("cutFlow_%s.png",tmpOutputName.data() ) );
