@@ -155,7 +155,7 @@ void runCode(bool isTest = false){
 			h_cutFlow->GetXaxis()->SetBinLabel(ilabel,cutFlowLabel[ilabel].data() );	
 		}
 		h_cutFlow->Draw();
-		c2->SaveAs(Form("cutFlow_%s.png",tmpOutputName.data() );
+		c2->SaveAs(Form("cutFlow_%s.png",tmpOutputName.data() ) );
 		
 		// draw the map of mindphi larger than 0.4 or smaller 0.4
 		TCanvas* c3 = new TCanvas("c3","c3");
