@@ -20,6 +20,8 @@
 */
 /////////////////////////////////////////////////
 	Double_t HTUseRange[5] = {200, 300, 700, 800,1200};
+	string paths[5] = {"HLT_PFHT180", "HLT_PFHT250", "HLT_PFHT510", "HLT_PFHT590", "HLT_PFHT1050"};
+	int trigScale[5] = {1, 1000, 75, 30, 1};
 ////////////////////////////////////////////////
 
 using namespace std;
@@ -38,8 +40,7 @@ bool pt_greater(const TLorentzVector& a, const TLorentzVector& b){
 
 void GetRfunction_signal(string inputfile, string outfile, bool isTest = false){
 	// use map for transform trigger path to pre-scales
-	string paths[5] = {"HLT_PFHT180", "HLT_PFHT250", "HLT_PFHT510", "HLT_PFHT590", "HLT_PFHT1050"};
-	int trigScale[5] = {1, 1000, 75, 30, 1};
+
 	for (auto x : HTUseRange) cout << x << " ";
 	cout << endl;
 	int totalNRange = sizeof(HTUseRange) / sizeof(HTUseRange[0]);
@@ -397,7 +398,7 @@ void GetRfunction_signal(string inputfile, string outfile, bool isTest = false){
 			}
 			
 			
-			// there are six cuts now.
+			// there are 9 cuts now.
 			h_cutFlow->Fill(0);
 			if (passTau_againstLep.size() > 0) continue;
 			h_cutFlow->Fill(1);
