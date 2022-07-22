@@ -58,7 +58,7 @@ void GetRfunction_signal(string inputfile, string outfile, bool isTest = false){
 	vector<float> N2B1;
 	vector<float> DDB;
 
-	TFile* fout = new TFile(outfile.data(),"UPDATE");
+	TFile* fout = new TFile(outfile.data(),"RECREATE");
 	TTree ot("tree","vars");
 	ot.Branch("mindphi",&mindphi);
 	ot.Branch("whichHT",&whichHT);
