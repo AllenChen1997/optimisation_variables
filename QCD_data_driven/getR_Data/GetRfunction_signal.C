@@ -141,15 +141,16 @@ void GetRfunction_signal(string inputfile, string outfile, bool isTest = false){
 		while (data.Next() ){
 			// make event process counter //
 			jEntry++;
-			if (isTest) cout <<  "Processing event " << jEntry << " of " << total_entry << endl;
-			else {
+			if (isTest){
+				cout <<  "Processing event " << jEntry << " of " << total_entry << endl;
+				if(jEntry>100)break;
+			} else {
 				if (jEntry % 1000 == 0) cout <<  "Processing event " << jEntry << " of " << total_entry << endl;
 				else if (jEntry == total_entry) cout <<  "Processing event " << jEntry << " of " << total_entry << endl;
 			}
-			if (isTest) if(jEntry>100)break;
 			//0. has a good vertex
 			if(*nVtx<1)continue;
-			
+			h_cutFlow->Fill(0);
 			//1.1 eletron looseID
 			vector<TLorentzVector> passEle;
 			for (int ie=0; ie<(int)*nEle; ie++){
@@ -352,7 +353,8 @@ void GetRfunction_signal(string inputfile, string outfile, bool isTest = false){
 				if (offline_HT > HTUseRange[totalNRange-1]) whichHT = totalNRange-1;
 			}
 			if (isTest) cout << offline_HT << " so range is : " << whichHT << endl;
-			
+			if (whichHT < 0) continue; // we don't need the event out of HT range 
+			h_cutFlow->Fill(1);
 			//7.1 triggers 
 			bool HLT_PFMETNoMu120_PFMHTNoMu120_IDTight = false;
 			bool HLT_PFMETNoMu120_PFMHTNoMu120_IDTight_PFHT60 = false;
@@ -383,6 +385,7 @@ void GetRfunction_signal(string inputfile, string outfile, bool isTest = false){
 			} // end of loop triggers
 			bool MET_triggerState = (HLT_PFMETNoMu120_PFMHTNoMu120_IDTight_PFHT60 || HLT_PFMETNoMu120_PFMHTNoMu120_IDTight ||HLT_PFMETNoMu140_PFMHTNoMu140_IDTight);
 			if (! isPassTrig) continue;
+			h_cutFlow->Fill(2);
 			//7.2 apply mindphi && addtional ak4 jet test(<=2)
 			int nExtraAk4 = 0;
 			mindphi = 999;
@@ -398,26 +401,24 @@ void GetRfunction_signal(string inputfile, string outfile, bool isTest = false){
 			}
 			
 			
-			// there are 9 cuts now.
-			h_cutFlow->Fill(0);
+			// there are 11 cuts now. incl(pass nVtx), whichHT, passTrig, tauVeto, photonVeto, EleVeto, LooseMuVeto, extraAk4, nFatJ, hasN2B1, "atleast1AK4"
+
 			if (passTau_againstLep.size() > 0) continue;
-			h_cutFlow->Fill(1);
-			if (passPho.size() > 0) continue;
-			h_cutFlow->Fill(2);
-			if (passEle.size() > 0) continue;
 			h_cutFlow->Fill(3);
-			if (passLooseMu.size() > 0) continue;
+			if (passPho.size() > 0) continue;
 			h_cutFlow->Fill(4);
-			if (nExtraAk4 > 2 ) continue;
+			if (passEle.size() > 0) continue;
 			h_cutFlow->Fill(5);
-			if (passFatJ.size() != 1 ) continue;
+			if (passLooseMu.size() > 0) continue;
 			h_cutFlow->Fill(6);
-			if (N2B1[0] < 0) continue; // after exact 1 fatj cut, we only have 1 N2B1 
+			if (nExtraAk4 > 2 ) continue;
 			h_cutFlow->Fill(7);
-			if (whichHT < 0) continue; // we don't need the event out of HT range 
+			if (passFatJ.size() != 1 ) continue;
 			h_cutFlow->Fill(8);
-			if (mindphi == 999) continue; // 999 means there is no ak4j
+			if (N2B1[0] < 0) continue; // after exact 1 fatj cut, we only have 1 N2B1 
 			h_cutFlow->Fill(9);
+			if (mindphi == 999) continue; // 999 means there is no ak4j
+			h_cutFlow->Fill(10);
 
 			
 			metpT = *METPT;
