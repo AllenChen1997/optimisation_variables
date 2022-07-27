@@ -55,8 +55,8 @@ float calculateWeight(vector<float> pars, float met){
 	return (TMath::Exp(pars[0] + pars[1]*met) + pars[2] ) * pars[3];
 }
 
-void fit_from_MC(string inputfile){
-	cout << "looking HT range is " << LookingRegion << endl;
+void fit_from_MC(string inputfile, int ChoosedHTRegion = LookingRegion){
+	cout << "looking HT range is " << ChoosedHTRegion << endl;
 	// setup STLs
 	vector< vector<float> > rFactor;
 	//vector< TH1F* > h_met_mindphi_l(6); // the histo for mindphi > 0.4, 6 is for 6 path trigger regions
@@ -100,15 +100,15 @@ void fit_from_MC(string inputfile){
 	
 	// fit again to get ratio a as the diff. b/w sig. and MC
 	TF1* func = new TF1("func",fit_Exp_c,0,200,4); // bound min and max, free params
-	cout << "rFactor size: " << rFactor[LookingRegion].size() << endl;
-	for (int i=0; i<rFactor[LookingRegion].size(); i++){
-		func->FixParameter(i,rFactor[LookingRegion][i]);
+	cout << "rFactor size: " << rFactor[ChoosedHTRegion].size() << endl;
+	for (int i=0; i<rFactor[ChoosedHTRegion].size(); i++){
+		func->FixParameter(i,rFactor[ChoosedHTRegion][i]);
 	}
 	
 	fin->Close();
 	fin = new TFile("./keep_histo_cutFull.root","READONLY");
 	//fin = new TFile("../../keep_histo_cutFull.root","READONLY");
-	TH1F* h = (TH1F*) fin->Get(Form("h_withSR_%i",LookingRegion) );
+	TH1F* h = (TH1F*) fin->Get(Form("h_withSR_%i",ChoosedHTRegion) );
 	h->Fit("func","R");
 	Double_t chi2 = func->GetChisquare();
 	vector<float>  params = getResults(func);
@@ -148,7 +148,7 @@ void fit_from_MC(string inputfile){
 		}
 		if (! ispass ) continue;
 		//if (*metpT > 200) continue;
-		if (*whichHT != LookingRegion) continue;
+		if (*whichHT != ChoosedHTRegion) continue;
 		if (*mindphi > 0.4) {
 			h_DDB_N2_l->Fill(N2B1[0],DDB[0]);
 			h_DDB_l->Fill(DDB[0]);
