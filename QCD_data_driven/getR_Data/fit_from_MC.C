@@ -115,6 +115,7 @@ void fit_from_MC(string inputfile, int ChoosedHTRegion = LookingRegion){
 	vector<float>  errors = getErrors(func);	
 	cout << "chisquare : " << chi2 << endl;
 		gStyle->SetOptStat("");
+		gStyle->SetOptFit(1111);
 	// draw the fit result
 	TText* t = new TText(.1*h->GetXaxis()->GetXmax(),.9*h->GetMaximum(),Form("chi2 %f",chi2) );
 	TCanvas* c0 = new TCanvas("c0","c0");
