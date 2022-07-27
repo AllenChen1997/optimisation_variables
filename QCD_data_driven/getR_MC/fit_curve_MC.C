@@ -88,6 +88,8 @@ vector<float> runfit(string input, string histname){
 
 void fit_curve_MC(string input = "keep_histo_cutFull.root", string output = "fit_result.root", bool isTest = false){
 	TFile* fout = new TFile(output.data(), "RECREATE");
+	TFile* fin = new TFile(input.data(), "READONLY");
+	int Nkeys = fin->GetNkeys();
 	vector<float> par;
 	TTree ot("tree","fit_results");
 	ot.Branch("par",&par);
@@ -95,7 +97,7 @@ void fit_curve_MC(string input = "keep_histo_cutFull.root", string output = "fit
 		par = runfit(input,"h_withSR_5");
 		ot.Fill();
 	} else {
-		for (int i=0; i<6; i++){
+		for (int i=0; i< Nkeys/2; i++){
 			par.clear();
 			par = runfit(input,Form("h_withSR_%i",i) );
 			ot.Fill();
