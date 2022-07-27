@@ -134,11 +134,12 @@ void runCode(bool isTest = false){
 				}
 			} else{
 
-				tmp_DDB_N2[*whichHT]->Fill(N2B1[0],DDB[0]); // this is only applied the first 6 cuts
+
 				
 				if (*mindphi > 0.4) {
 					tmp_l[*whichHT]->Fill(*metpT,*weight);
-					tmp_n2b1[*whichHT]->Fill(N2B1[0],*weight);
+					tmp_n2b1[*whichHT]->Fill(N2B1[0],*weight);				
+					tmp_DDB_N2[*whichHT]->Fill(N2B1[0],DDB[0]); 
 				} else {
 					tmp_s[*whichHT]->Fill(*metpT,*weight);
 				}
