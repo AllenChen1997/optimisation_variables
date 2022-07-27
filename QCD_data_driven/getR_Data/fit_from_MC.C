@@ -126,7 +126,6 @@ void fit_from_MC(string inputfile, int ChoosedHTRegion = LookingRegion){
 	fin->Close();
 	fin = new TFile(inputfile.data(), "READONLY");
 	TTreeReader data("tree",fin);
-	TTreeReaderArray<bool> cuts(data,"cuts");
 	TTreeReaderValue<float> mindphi(data,"mindphi");
 	TTreeReaderValue<float> metpT(data,"metpT");
 	TTreeReaderArray<float> DDB(data,"DDB");
@@ -138,15 +137,6 @@ void fit_from_MC(string inputfile, int ChoosedHTRegion = LookingRegion){
 		jEntry++;
 		if (jEntry%2 == 0) continue;
 		
-		// apply cuts
-		bool ispass = true;
-		for (int icut = 0; icut < 6; icut++){
-			if (! cuts[icut]){
-				ispass = false;
-				break;
-			}
-		}
-		if (! ispass ) continue;
 		//if (*metpT > 200) continue;
 		if (*whichHT != ChoosedHTRegion) continue;
 		if (*mindphi > 0.4) {

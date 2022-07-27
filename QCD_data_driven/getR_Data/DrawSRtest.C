@@ -30,7 +30,6 @@ void DrawSRtest(bool isTest = false){
 	
 	string inputDatalist = "JetHT-Run2017B-31Mar2018-v1.root";
 	string outputDataname = "JetHT-Run2017B-31Mar2018-v1";
-	int weight; // this one is used for initailization the "weight" variable for MC files(but there is no weight in data)
 	
 	int totalFiles = 1;
 	
@@ -93,7 +92,6 @@ void DrawSRtest(bool isTest = false){
 		TTreeReaderArray<float> DDB(data,"DDB");
 		TTreeReaderArray<float> N2B1(data,"N2B1");
 		TTreeReaderValue<int> whichHT(data,"whichHT");
-		TTreeReaderValue<int> weight(data,"weight");
 		TH1F* h_cutFlow = (TH1F*) fin->Get("h_cutFlow");
 		
 		int total_entry = data.GetEntries(true);
@@ -112,10 +110,10 @@ void DrawSRtest(bool isTest = false){
 			tmp_DDB_N2->Fill(N2B1[0],DDB[0]); // this is only applied the first 6 cuts
 			
 			if (*mindphi > 0.4) {
-				tmp_l[*whichHT]->Fill(*metpT,*weight);
-				tmp_n2b1[*whichHT]->Fill(N2B1[0],*weight);
+				tmp_l[*whichHT]->Fill(*metpT);
+				tmp_n2b1[*whichHT]->Fill(N2B1[0]);
 			} else {
-				tmp_s[*whichHT]->Fill(*metpT,*weight);
+				tmp_s[*whichHT]->Fill(*metpT);
 			}
 			
 			
