@@ -204,7 +204,7 @@ void runCode(bool isTest = false){
 
 		// draw DDB_ N2 plot 
 		h_DDB_N2[i]->Draw("CANDLE");
-		c->SaveAs("DDB_N2.png");
+		c->SaveAs(Form("DDB_N2_%i.png",i));
 		h_DDB_N2[i]->Write();
 	}
 	fout->Close();
