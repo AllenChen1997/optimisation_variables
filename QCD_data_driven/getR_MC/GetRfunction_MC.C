@@ -28,8 +28,9 @@ void run_code(string inputfile, string outfile, bool isTest = false){
 	Double_t xbins[16] = {0, 25, 50, 75, 100, 125, 150, 175, 200, 250, 300, 350, 400, 500, 600, 1000};
 	int totalNRange = sizeof(HTUseRange) / sizeof(HTUseRange[0]);
 	// things to output //
-	TH1F* h_cutFlow = new TH1F("h_cutFlow","",10,0,10); // the cutflow plots
-	string cutFlowLabel[10] = {"incl","tauVeto","photonVeto","EleVeto","LooseMuVeto","extraAk4","nFatJ","hasN2B1","HTRegion","atleast1AK4"};	
+	TH1F* h_cutFlow = new TH1F("h_cutFlow","",11,0,11); // the cutflow plots
+	//string cutFlowLabel[10] = {"incl","tauVeto","photonVeto","EleVeto","LooseMuVeto","extraAk4","nFatJ","hasN2B1","HTRegion","atleast1AK4"};	
+	string cutFlowLabel[11] = {"incl","hlt trigger","tauVeto","photonVeto","EleVeto","LooseMuVeto","extraAk4","nFatJ","hasN2B1","HTRegion","atleast1AK4"};	
 	TH1F* h_HTRange = new TH1F("h_HTRange","",totalNRange-1,HTUseRange);
 	// output tree //
 	float mindphi;
@@ -375,24 +376,26 @@ void run_code(string inputfile, string outfile, bool isTest = false){
 			}
 			// there are six cuts now.
 			h_cutFlow->Fill(0);
-			if (passTau_againstLep.size() > 0) continue;
+			if (! MET_triggerState) continue;
 			h_cutFlow->Fill(1);
-			if (passPho.size() > 0) continue;
+			if (passTau_againstLep.size() > 0) continue;
 			h_cutFlow->Fill(2);
-			if (passEle.size() > 0) continue;
+			if (passPho.size() > 0) continue;
 			h_cutFlow->Fill(3);
-			if (passLooseMu.size() > 0) continue;
+			if (passEle.size() > 0) continue;
 			h_cutFlow->Fill(4);
-			if (nExtraAk4 > 2 ) continue;
+			if (passLooseMu.size() > 0) continue;
 			h_cutFlow->Fill(5);
-			if (passFatJ.size() != 1 ) continue;
+			if (nExtraAk4 > 2 ) continue;
 			h_cutFlow->Fill(6);
-			if (N2B1[0] < 0) continue; // after exact 1 fatj cut, we only have 1 N2B1 
+			if (passFatJ.size() != 1 ) continue;
 			h_cutFlow->Fill(7);
-			if (whichHT < 0) continue; // we don't need the event out of HT range 
+			if (N2B1[0] < 0) continue; // after exact 1 fatj cut, we only have 1 N2B1 
 			h_cutFlow->Fill(8);
-			if (mindphi == 999) continue; // 999 means there is no ak4j
+			if (whichHT < 0) continue; // we don't need the event out of HT range 
 			h_cutFlow->Fill(9);
+			if (mindphi == 999) continue; // 999 means there is no ak4j
+			h_cutFlow->Fill(10);
 
 			metpT = *METPT;
 			ot.Fill();
