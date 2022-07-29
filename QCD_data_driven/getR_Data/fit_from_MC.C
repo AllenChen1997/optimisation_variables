@@ -104,6 +104,7 @@ void fit_from_MC(string inputfile, int ChoosedHTRegion = LookingRegion){
 	for (int i=0; i<rFactor[ChoosedHTRegion].size(); i++){
 		func->FixParameter(i,rFactor[ChoosedHTRegion][i]);
 	}
+	func->SetParLimits(4,-2,2);
 	
 	fin->Close();
 	fin = new TFile("./keep_histo_cutFull.root","READONLY");
@@ -117,10 +118,10 @@ void fit_from_MC(string inputfile, int ChoosedHTRegion = LookingRegion){
 		gStyle->SetOptStat("");
 		gStyle->SetOptFit(1111);
 	// draw the fit result
-	TText* t = new TText(.1*h->GetXaxis()->GetXmax(),.9*h->GetMaximum(),Form("chi2 %f",chi2) );
+	//TText* t = new TText(.1*h->GetXaxis()->GetXmax(),.9*h->GetMaximum(),Form("chi2 %f",chi2) );
 	TCanvas* c0 = new TCanvas("c0","c0");
 	h->Draw();
-	t->Draw("SAME");
+	//t->Draw("SAME");
 	c0->SaveAs("fit_again.png");
 	
 	// input main real data //
@@ -161,6 +162,8 @@ void fit_from_MC(string inputfile, int ChoosedHTRegion = LookingRegion){
 	h_N2_s->Write();
 	h_DDB_l->Write();
 	h_DDB_s->Write();
+	h_DDB_N2_s->Write();
+	h_DDB_N2_l->Write();
 	fout->Close();
 	
 	TCanvas* c1 = new TCanvas("c1","c1");
