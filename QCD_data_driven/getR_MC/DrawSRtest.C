@@ -12,8 +12,9 @@
 
 using namespace std;
 
-bool isMC;
 bool isHalve; // entry = 0 use for fitting; entry = 1 used for N2B1 study, still not done yet
+bool isTest = false; // open this for layout more information
+
 template<typename T>
 void setDrawOpt(T& h,string title, string xTitle, string yTitle){
 	h->SetTitle(title.c_str());
@@ -26,7 +27,7 @@ void setDrawOpt(T& h,string title, string xTitle, string yTitle){
 	h->SetYTitle(yTitle.c_str());
 }
 
-void runCode(bool isTest = false){
+void runCode(int parts = 0){
 	// load files 
 	string inputMClist[8] = {"QCD_100to200.root","QCD_200to300.root","QCD_300to500.root","QCD_500to700.root","QCD_700to1000.root","QCD_1000to1500.root","QCD_1500to2000.root","QCD_2000toInf.root"};
 	//string inputMClist[6] = {"QCD_300to500.root","QCD_500to700.root","QCD_700to1000.root","QCD_1000to1500.root","QCD_1500to2000.root","QCD_2000toInf.root"};
@@ -34,27 +35,19 @@ void runCode(bool isTest = false){
 	// string outputMCname[6] = {"300to500","500to700","700to1000","1000to1500","1500to2000","2000toIng"};
 	float xs[8] = {	23700000.0, 1547000.0, 322600.0, 29980.0, 6334.0, 1088.0, 99.11, 20.23};
 	// float xs[6] = { 322600.0, 29980.0, 6334.0, 1088.0, 99.11, 20.23};
-	string inputDatalist = "JetHT-Run2017B-31Mar2018-v1.root";
-	string outputDataname = "JetHT-Run2017B-31Mar2018-v1";
+
 	int weight; // this one is used for initailization the "weight" variable for MC files(but there is no weight in data)
 	
-	int totalFiles = 1;
-	if (isMC) totalFiles = sizeof(inputMClist)/sizeof(inputMClist[0]);
+	int totalFiles = sizeof(inputMClist)/sizeof(inputMClist[0]);
 	
 	// outputs // 	
 		// decide the number of output regions
 	int totalNRange = 0;
-	if (isMC) {
-		TFile* fin_0 = new TFile(inputMClist[0].data(), "READONLY");
-		TH1F* h_HTRange = (TH1F*) fin_0->Get("h_HTRange");
-		totalNRange = h_HTRange->GetNbinsX() + 1;
-	} else {
-		TFile* fin_0 = new TFile(inputDatalist.data(), "READONLY");
-		TH1F* h_HTRange = (TH1F*) fin_0->Get("h_HTRange");
-		totalNRange = h_HTRange->GetNbinsX() + 1;
-	}
+	TFile* fin_0 = new TFile(inputMClist[0].data(), "READONLY");
+	TH1F* h_HTRange = (TH1F*) fin_0->Get("h_HTRange");
+	totalNRange = h_HTRange->GetNbinsX() + 1;
 	
-	vector< TH1F* > h_met_mindphi_l(totalNRange); // the histo for mindphi > 0.4, 6 is for 6 path trigger regions
+	vector< TH1F* > h_met_mindphi_l(totalNRange); // the histo for mindphi > 0.4
 	vector< TH1F* > h_met_mindphi_s(totalNRange); // the histo for mindphi < 0.4
 	vector< TH1F* > tmp_l(totalNRange); // used in each file, after loop all entries. append to h_met_mindphi_l
 	vector< TH1F* > tmp_s(totalNRange); 
@@ -100,13 +93,9 @@ void runCode(bool isTest = false){
 		h_map_s->Reset("ICESM");
 		
 		TFile* fin;
-		if (isMC){
-			cout << "reading " << inputMClist[iFile] << endl;
-			fin = new TFile(inputMClist[iFile].data(), "READONLY");
-		} else {
-			cout << "reading " << inputDatalist << endl;
-			fin = new TFile(inputDatalist.data(), "READONLY");
-		}
+		cout << "reading " << inputMClist[iFile] << endl;
+		fin = new TFile(inputMClist[iFile].data(), "READONLY");
+		
 		TTreeReader data("tree",fin);
 		TTreeReaderValue<float> mindphi(data,"mindphi");
 		TTreeReaderValue<float> metpT(data,"metpT");
@@ -127,23 +116,16 @@ void runCode(bool isTest = false){
 			else if (jEntry == total_entry) cout <<  "Processing event " << jEntry << " of " << total_entry << endl;
 			
 			if (N2B1.GetSize() > 1) nN2B1gt1++;
-			if (isHalve && jEntry%2 == 0) {// only MC need to consider if needed seperate into two piece
-				if (*mindphi > 0.4) {
-					tmp_l[*whichHT]->Fill(*metpT,*weight);
-					tmp_n2b1[*whichHT]->Fill(N2B1[0],*weight);
-				}
-			} else{
-
-
-				
-				if (*mindphi > 0.4) {
-					tmp_l[*whichHT]->Fill(*metpT,*weight);
-					tmp_n2b1[*whichHT]->Fill(N2B1[0],*weight);				
-					tmp_DDB_N2[*whichHT]->Fill(N2B1[0],DDB[0]); 
-				} else {
-					tmp_s[*whichHT]->Fill(*metpT,*weight);
-				}
+			if (isHalve && jEntry%2 == parts)  continue; // by using this to seperate files into two piece
+			
+			if (*mindphi > 0.4) {
+				tmp_l[*whichHT]->Fill(*metpT,*weight);
+				tmp_n2b1[*whichHT]->Fill(N2B1[0],*weight);				
+				tmp_DDB_N2[*whichHT]->Fill(N2B1[0],DDB[0]); 
+			} else {
+				tmp_s[*whichHT]->Fill(*metpT,*weight);
 			}
+			
 			
 		} // end of entries
 		cout << "nN2B1gt1= " << nN2B1gt1 << endl;
@@ -164,9 +146,7 @@ void runCode(bool isTest = false){
 		
 		
 		gStyle->SetOptStat("");
-		string tmpOutputName;
-		if (isMC) tmpOutputName = outputMCname[iFile];	
-		else tmpOutputName = outputDataname;	
+		string tmpOutputName = outputMCname[iFile];	
 		// draw the cutflow plot
 		TCanvas* c2 = new TCanvas("c2","c2");
 		for (int ilabel=0; ilabel<sizeof(cutFlowLabel)/sizeof(cutFlowLabel[0]); ilabel++){
@@ -185,17 +165,20 @@ void runCode(bool isTest = false){
 		
 
 	//TFile* fout = new TFile(Form("keep_histo_cut%i.root",n),"RECREATE");
-	TFile* fout = new TFile("keep_histo_cutFull.root","RECREATE");
+	string outputname = "keep_histo_cutFull.root";
+	if (parts == 1) outputname = "keep_histo_cutFull_closureTest.root";
+	TFile* fout = new TFile(outputname.data(),"RECREATE");
 	TCanvas* c = new TCanvas("c","c");
 	TH1F* htmp = (TH1F*) h_met_mindphi_l[0]->Clone("htmp"); // to get ratio plot of mindphi ? over mindphi <
-
+	
 	for (int i = 0; i< h_met_mindphi_l.size() ;i++){
 		
 		htmp->Divide(h_met_mindphi_l[i], h_met_mindphi_s[i] );
 		setDrawOpt(htmp,"","MET","");
-		htmp->Draw("HIST E TEXT0");
-
-		c->SaveAs(Form("rFunction_MC_%i.png",i) );
+		if (parts == 0){
+			htmp->Draw("HIST E TEXT0");
+			c->SaveAs(Form("rFunction_MC_%i.png",i) );
+		}
 		
 		// save into root file
 		htmp->SetName(Form("h_withSR_%i",i) );
@@ -204,19 +187,23 @@ void runCode(bool isTest = false){
 		h_n2b1[i]->Write();
 
 		// draw DDB_ N2 plot 
-		h_DDB_N2[i]->Draw("CANDLE");
-		c->SaveAs(Form("DDB_N2_%i.png",i));
+		if (parts == 0){
+			h_DDB_N2[i]->Draw("CANDLE");
+			c->SaveAs(Form("DDB_N2_%i.png",i));
+		}
 		h_DDB_N2[i]->Write();
 	}
 	fout->Close();
 	
 }
-void DrawSRtest(bool setisMC , bool setisHalve = false){
-	// for (int i=1; i<=6; i++){
-		// runCode(i,false);
-	// }
-	isMC = setisMC;
+void DrawSRtest(bool setisHalve = false){
 	isHalve = setisHalve;
-	runCode();
-
+	if (isHalve) {
+		int parts = 0;
+		runCode(parts);
+		parts = 1;
+		runCode(parts);
+	} else {
+		runCode();
+	}
 }
