@@ -14,5 +14,5 @@ for ((i=0; i < $1; i++));do
 	sed -i '/lookingHTRegion =/c int lookingHTRegion = '$i';' combine_plots_corrPlot_profileVer.C
 	root -b -q combine_plots_corrPlot_profileVer.C
 	mkdir -p region$i
-	mv combine_MC_Data_DDB_N2B1_corr*.png region$i
+	mv *.png region$i
 done
