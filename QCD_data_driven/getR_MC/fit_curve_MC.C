@@ -22,19 +22,19 @@ vector<float> getErrors(TF1* func){
 	return errors;
 }
 
-Double_t fit_Exp(Double_t *x, Double_t* par){
+/*Double_t fit_Exp(Double_t *x, Double_t* par){
 	//return par[0]*TMath::Exp(par[1]*x[0]);
 	return TMath::Exp(par[0] + par[1]*x[0]);
-}
+}*/
 
 Double_t fit_Exp_c(Double_t *x, Double_t* par){
 	//return par[0]*TMath::Exp(par[1]*x[0]);
 	return TMath::Exp(par[0] + par[1]*x[0]) + par[2];
 }
 
-Double_t fit_poly3(Double_t *x, Double_t* par){
+/*Double_t fit_poly3(Double_t *x, Double_t* par){
 	return par[0] + par[1] * x[0] + par[2] * x[0] * x[0] + par[3] * x[0] * x[0] * x[0];
-}
+}*/
 
 vector<float> runfit(string input, string histname){
 	TFile* fin = new TFile(input.data(), "READONLY");
@@ -97,7 +97,7 @@ void fit_curve_MC(string input = "keep_histo_cutFull.root", string output = "fit
 		par = runfit(input,"h_withSR_5");
 		ot.Fill();
 	} else {
-		for (int i=0; i< Nkeys/2; i++){
+		for (int i=0; i< Nkeys/4; i++){
 			par.clear();
 			par = runfit(input,Form("h_withSR_%i",i) );
 			ot.Fill();

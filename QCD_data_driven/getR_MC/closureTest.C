@@ -18,7 +18,6 @@
 
 using namespace std;
 
-bool isHalve; // entry = 0 use for fitting; entry = 1 used for N2B1 study, still not done yet
 bool isTest = false; // open this for layout more information
 
 template<typename T>
@@ -33,7 +32,20 @@ void setDrawOpt(T& h,string title, string xTitle, string yTitle){
 	h->SetYTitle(yTitle.c_str());
 }
 
-void runCode(){
+
+void loadFitResult(vector<float>& pars){
+	TFile* fin = new TFile("fit_result.root");
+	TTreeReader mytree("tree",fin);
+	TTreeReaderArray<float> par(mytree,"par");
+	
+	while(mytree.Next() ){
+		for (auto x : par)	pars.push_back(x);
+	}
+	fin->Close();
+}
+		
+
+void runCode(vector<float> pars){
 	// load files 
 	string inputMClist[8] = {"QCD_100to200.root","QCD_200to300.root","QCD_300to500.root","QCD_500to700.root","QCD_700to1000.root","QCD_1000to1500.root","QCD_1500to2000.root","QCD_2000toInf.root"};
 	// string inputMClist[6] = {"QCD_300to500.root","QCD_500to700.root","QCD_700to1000.root","QCD_1000to1500.root","QCD_1500to2000.root","QCD_2000toInf.root"};
@@ -47,51 +59,43 @@ void runCode(){
 	int totalFiles = sizeof(inputMClist)/sizeof(inputMClist[0]);
 	
 	// outputs // 	
-		// decide the number of output regions
+	// decide the number of output regions
 	int totalNRange = 0;
 	TFile* fin_0 = new TFile(inputMClist[0].data(), "READONLY");
 	TH1F* h_HTRange = (TH1F*) fin_0->Get("h_HTRange");
 	totalNRange = h_HTRange->GetNbinsX() + 1;
 	
-	vector< TH1F* > h_met_mindphi_l(totalNRange); // the histo for mindphi > 0.4
-	vector< TH1F* > h_met_mindphi_s(totalNRange); // the histo for mindphi < 0.4
-	vector< TH1F* > tmp_l(totalNRange); // used in each file, after loop all entries. append to h_met_mindphi_l
-	vector< TH1F* > tmp_s(totalNRange); 
-	vector< TH2F* > h_DDB_N2(totalNRange);
-	vector< TH2F* > tmp_DDB_N2(totalNRange);
+	vector< TH2F* > h_DDB_N2_SR(totalNRange); // notice that it is filled when mindphi > 0.4 (pass region)
+	vector< TH2F* > h_DDB_N2_CR(totalNRange); // notice that it is filled when mindphi < 0.4 (fail region)
+	vector< TH2F* > tmp_DDB_N2_SR(totalNRange);
+	vector< TH2F* > tmp_DDB_N2_CR(totalNRange);
 	
 	Double_t xbins[16] = {0, 25, 50, 75, 100, 125, 150, 175, 200, 250, 300, 350, 400, 500, 600, 1000};
 	string cutFlowLabel[10] = {"incl","tauVeto","photonVeto","EleVeto","LooseMuVeto","extraAk4","nFatJ","hasN2B1","HTRegion","atleast1AK4"};
-	TH2F* h_map_l = new TH2F("map_l","",15,xbins,6,0,6);
-	TH2F* h_map_s = (TH2F*) h_map_l->Clone("map_s");
 
-	for (int i=0; i< h_met_mindphi_l.size(); i++){
-		h_met_mindphi_l[i] = new TH1F(Form("h_met_mindphi_l_withSR_%i",i),"",15,xbins);
-		h_met_mindphi_s[i] = (TH1F*) h_met_mindphi_l[i]->Clone(Form("h_met_mindphi_s_withSR_%i",i));
-		tmp_l[i] = (TH1F*) h_met_mindphi_l[i]->Clone(Form("tmp_l_withSR_%i",i));
-		tmp_s[i] = (TH1F*) h_met_mindphi_l[i]->Clone(Form("tmp_s_withSR_%i",i));
-		h_DDB_N2[i] = new TH2F(Form("DDB_N2_%i",i) ,"",NN2,N2min,N2max,NDDB,DDBmin,DDBmax);
-		setDrawOpt(h_DDB_N2[i],"","N2B1","DDB");
-		tmp_DDB_N2[i] = (TH2F*) h_DDB_N2[i]->Clone(Form("tmp_DDB_N2_%i",i) );
+	for (int i=0; i< totalNRange; i++){
+		
+		h_DDB_N2_SR[i] = new TH2F(Form("DDB_N2_SR_%i",i) ,"",NN2,N2min,N2max,NDDB,DDBmin,DDBmax);
+		setDrawOpt(h_DDB_N2_SR[i],"","N2B1","DDB");
+		h_DDB_N2_CR[i] = (TH2F*) h_DDB_N2_SR[i]->Clone(Form("DDB_N2_CR_%i",i) );
+		tmp_DDB_N2_SR[i] = (TH2F*) h_DDB_N2_SR[i]->Clone(Form("tmp_DDB_N2_SR_%i",i) );
+		tmp_DDB_N2_CR[i] = (TH2F*) h_DDB_N2_SR[i]->Clone(Form("tmp_DDB_N2_CR_%i",i) );
 		// call sumw2
-		h_met_mindphi_l[i]->Sumw2();
-		h_met_mindphi_s[i]->Sumw2();
-		tmp_l[i]->Sumw2();
-		tmp_s[i]->Sumw2();
-		h_DDB_N2[i]->Sumw2();
-		tmp_DDB_N2[i]->Sumw2();
+		h_DDB_N2_SR[i]->Sumw2();
+		h_DDB_N2_CR[i]->Sumw2();
+		tmp_DDB_N2_SR[i]->Sumw2();
+		tmp_DDB_N2_CR[i]->Sumw2();
 	}	
+	
+	// load the fitting result 
 	
 	
 	for (int iFile=0; iFile<totalFiles; iFile++){
 		// reset all vectors 
-		for (int x=0; x< tmp_l.size(); x++){
-			tmp_l[x]->Reset("ICESM");
-			tmp_s[x]->Reset("ICESM");
-			tmp_DDB_N2[x]->Reset("ICESM");
+		for (int x=0; x< totalNRange; x++){
+			tmp_DDB_N2_SR[x]->Reset("ICESM");
+			tmp_DDB_N2_CR[x]->Reset("ICESM");
 		}
-		h_map_l->Reset("ICESM");
-		h_map_s->Reset("ICESM");
 		
 		TFile* fin;
 		cout << "reading " << inputMClist[iFile] << endl;
@@ -109,6 +113,7 @@ void runCode(){
 		int total_entry = data.GetEntries(true);
 		int jEntry= 0;
 		int nN2B1gt1 = 0;
+		int nRweightLt0 = 0;
 		while(data.Next() ){
 			// deal with the entries in the tree
 			jEntry++;
@@ -117,86 +122,70 @@ void runCode(){
 			else if (jEntry == total_entry) cout <<  "Processing event " << jEntry << " of " << total_entry << endl;
 			
 			if (N2B1.GetSize() > 1) nN2B1gt1++;
-			if (isHalve && jEntry%2 == 0)  continue; // by using this to seperate files into two piece
+			if (jEntry%2 == 1)  continue; // by using this to seperate files into two piece
 			
+			int p0 = *whichHT * 3;
+			float met = *metpT;
+			float rweight = TMath::Exp(pars[p0] + pars[p0+1]*met) + pars[p0+2];
 			if (*mindphi > 0.4) {
-				tmp_l[*whichHT]->Fill(*metpT,*weight);
-				tmp_DDB_N2[*whichHT]->Fill(N2B1[0],DDB[0],*weight); 
+				tmp_DDB_N2_SR[*whichHT]->Fill(N2B1[0],DDB[0],*weight);
 			} else {
-				tmp_s[*whichHT]->Fill(*metpT,*weight);
+				tmp_DDB_N2_CR[*whichHT]->Fill(N2B1[0],DDB[0],*weight*rweight);
 			}
-			
-			
+			if (rweight < 0) nRweightLt0++;
 		} // end of entries
 		cout << "nN2B1gt1= " << nN2B1gt1 << endl;
-		float calWeight = xs[iFile] * 2.0 / (float) h_cutFlow->GetBinContent(1); // the factor 2 is because we only use half of event. total gen eve. / 2 
-		if (! isHalve ) calWeight = xs[iFile] / (float) h_cutFlow->GetBinContent(1);
+		cout << "nRweightLt0 = " << nRweightLt0 << endl;
+		float calWeight = xs[iFile] * 2.0 / (float) h_cutFlow->GetBinContent(1);;
 
-		for (int k=0; k<h_met_mindphi_l.size(); k++){
-
-			h_met_mindphi_l[k]->Add(tmp_l[k], calWeight);
-			h_met_mindphi_s[k]->Add(tmp_s[k], calWeight);
-			h_DDB_N2[k]->Add(tmp_DDB_N2[k], calWeight);
-			for (int nbin = 1; nbin<=15; nbin++){
-				h_map_l->SetBinContent(nbin,k+1,tmp_l[k]->GetBinContent(nbin) );
-				h_map_s->SetBinContent(nbin,k+1,tmp_s[k]->GetBinContent(nbin) );
-			}
+		for (int k=0; k<totalNRange; k++){
+			h_DDB_N2_SR[k]->Add(tmp_DDB_N2_SR[k], calWeight);
+			h_DDB_N2_CR[k]->Add(tmp_DDB_N2_CR[k], calWeight);
 		}
 		
 		
 		
 		gStyle->SetOptStat("");
-		string tmpOutputName = outputMCname[iFile];	
+		/*string tmpOutputName = outputMCname[iFile];	
 		// draw the cutflow plot
 		TCanvas* c2 = new TCanvas("c2","c2");
 		for (int ilabel=0; ilabel<sizeof(cutFlowLabel)/sizeof(cutFlowLabel[0]); ilabel++){
 			h_cutFlow->GetXaxis()->SetBinLabel(ilabel+1,cutFlowLabel[ilabel].data() );	
 		}
-		h_cutFlow->Draw();
-		c2->SaveAs(Form("cutFlow_%s.png",tmpOutputName.data() ) );
+		h_cutFlow->Draw(); */
+		//c2->SaveAs(Form("cutFlow_%s.png",tmpOutputName.data() ) );
 		
 		// draw the map of mindphi larger than 0.4 or smaller 0.4
-		TCanvas* c3 = new TCanvas("c3","c3");
-		h_map_l->Draw("COLZ");
-		c3->SaveAs(Form("map_l_withSR_%s.png",tmpOutputName.data() ) );
-		h_map_s->Draw("COLZ");
-		c3->SaveAs(Form("map_s_withSR_%s.png",tmpOutputName.data() ) );
+		fin->Close();
 	} // end of all files
-		
 
-	//TFile* fout = new TFile(Form("keep_histo_cut%i.root",n),"RECREATE");
-	string outputname = "keep_histo_cutFull.root";
-	if (! isHalve) outputname = "keep_histo_cutFull_noHalve.root";
-	TFile* fout = new TFile(outputname.data(),"RECREATE");
+	// print out file
 	TCanvas* c = new TCanvas("c","c");
-	TH1F* htmp = (TH1F*) h_met_mindphi_l[0]->Clone("htmp"); // to get ratio plot of mindphi ? over mindphi <
 	
-	for (int i = 0; i< h_met_mindphi_l.size() ;i++){
-		
-		htmp->Divide(h_met_mindphi_l[i], h_met_mindphi_s[i] );
-		setDrawOpt(htmp,"","MET","");
-		htmp->Draw("HIST E TEXT0");
-		c->SaveAs(Form("rFunction_MC_%i.png",i) );
-		
-		// save into root file
-		htmp->SetName(Form("h_withSR_%i",i) );
-		htmp->Write();
-		TH1F* h_n2b1 = (TH1F*) h_DDB_N2[i]->ProjectionX();
-		h_n2b1->SetName(Form("h_n2b1_%i",i) );
-		h_n2b1->Write();
-		TH1F* h_DDB = (TH1F*) h_DDB_N2[i]->ProjectionY();
-		h_DDB->SetName(Form("h_DDB_%i",i) );
-		h_DDB->Write();
-		// draw DDB_ N2 plot ){
-		h_DDB_N2[i]->Draw("CANDLE");
-		c->SaveAs(Form("DDB_N2_%i.png",i));
-		h_DDB_N2[i]->Write();
+	for (int i = 0; i< totalNRange ;i++){	
+		// using projection to get 1D hist
+		// draw n2b1
+		TH1F* h_n2b1_SR = (TH1F*) h_DDB_N2_SR[i]->ProjectionX();
+		TH1F* h_n2b1_CR = (TH1F*) h_DDB_N2_CR[i]->ProjectionX();
+		setDrawOpt(h_n2b1_SR,"","N_2^1","");
+		h_n2b1_SR->Draw();
+		h_n2b1_CR->SetLineColor(kRed);
+		h_n2b1_CR->Draw("SAME");
+		c->SaveAs(Form("compare_n2b1_%i.png",i) );
+		// draw ddb
+		TH1F* h_DDB_SR = (TH1F*) h_DDB_N2_SR[i]->ProjectionY();
+		TH1F* h_DDB_CR = (TH1F*) h_DDB_N2_CR[i]->ProjectionY();
+		setDrawOpt(h_DDB_SR,"","DDB","");
+		h_DDB_SR->Draw();
+		h_DDB_CR->SetLineColor(kRed);
+		h_DDB_CR->Draw("SAME");
+		c->SaveAs(Form("compare_DDB_%i.png",i) );
 	}
-	fout->Close();
 	
 }
-void DrawSRtest(bool setisHalve = true){
-	isHalve = setisHalve;
-	runCode();
+void closureTest(){
+	vector<float> pars;
+	loadFitResult(pars);
+	runCode(pars);
 	
 }
