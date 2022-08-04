@@ -167,10 +167,20 @@ void runCode(vector<float> pars){
 		// draw n2b1
 		TH1F* h_n2b1_SR = (TH1F*) h_DDB_N2_SR[i]->ProjectionX();
 		TH1F* h_n2b1_CR = (TH1F*) h_DDB_N2_CR[i]->ProjectionX();
-		setDrawOpt(h_n2b1_SR,"","N_2^1","");
+		setDrawOpt(h_n2b1_SR,"","N_{2}^{1}","");
+		h_n2b1_SR->GetXaxis()->SetTitleSize(0.04);
+		h_n2b1_SR->GetXaxis()->SetTitleOffset(1.1);
 		h_n2b1_SR->Draw();
 		h_n2b1_CR->SetLineColor(kRed);
 		h_n2b1_CR->Draw("SAME");
+		
+		TLegend legend1(0.1,0.7,0.4,0.9);
+		legend1.SetFillColor(0);
+		legend1.SetFillStyle(0);
+		legend1.SetLineWidth(0);
+		legend1.AddEntry(h_n2b1_SR,"mindphi > 0.4");
+		legend1.AddEntry(h_n2b1_CR,"mindphi < 0.4");
+		legend1.Draw("SAME");
 		c->SaveAs(Form("compare_n2b1_%i.png",i) );
 		// draw ddb
 		TH1F* h_DDB_SR = (TH1F*) h_DDB_N2_SR[i]->ProjectionY();
@@ -179,6 +189,13 @@ void runCode(vector<float> pars){
 		h_DDB_SR->Draw();
 		h_DDB_CR->SetLineColor(kRed);
 		h_DDB_CR->Draw("SAME");
+		TLegend legend2(0.7,0.7,0.9,0.9);
+		legend2.SetFillColor(0);
+		legend2.SetFillStyle(0);
+		legend2.SetLineWidth(0);
+		legend2.AddEntry(h_DDB_SR,"mindphi > 0.4");
+		legend2.AddEntry(h_DDB_CR,"mindphi < 0.4");
+		legend2.Draw("SAME");
 		c->SaveAs(Form("compare_DDB_%i.png",i) );
 	}
 	
