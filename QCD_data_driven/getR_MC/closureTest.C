@@ -24,10 +24,15 @@ template<typename T>
 void setDrawOpt(T& h,string title, string xTitle, string yTitle){
 	h->SetTitle(title.c_str());
 	h->SetTitleSize(0.07);
-	h->GetXaxis()->SetLabelSize(0.05);
-	h->GetXaxis()->SetTitleSize(0.05);
-	h->GetYaxis()->SetLabelSize(0.05);
-	h->GetYaxis()->SetTitleSize(0.05);
+	h->GetXaxis()->SetLabelFont(53);
+	h->GetXaxis()->SetLabelSize(16);
+	h->GetXaxis()->SetTitleFont(53);
+	h->GetXaxis()->SetTitleSize(16);
+	
+	h->GetYaxis()->SetLabelFont(53);
+	h->GetYaxis()->SetLabelSize(16);
+	h->GetYaxis()->SetTitleFont(53);
+	h->GetYaxis()->SetTitleSize(16);
 	h->SetXTitle(xTitle.c_str());
 	h->SetYTitle(yTitle.c_str());
 }
@@ -161,31 +166,61 @@ void runCode(vector<float> pars){
 
 	// print out file
 	TCanvas* c = new TCanvas("c","c");
+	TPad* pMain = new TPad("pMain","pMain",0.0,0.35,1.0,1.0);
+	pMain->SetRightMargin(0.05);
+	pMain->SetLeftMargin(0.12);
+	pMain->SetBottomMargin(0.02);
+	pMain->SetTopMargin(0.1);
 	
+	TPad* pRatio = new TPad("pRatio","pRatio",0.0,0.0,1.0,0.35);
+	pRatio->SetRightMargin(0.05);
+	pRatio->SetLeftMargin(0.12);
+	pRatio->SetTopMargin(0.02);
+	pRatio->SetBottomMargin(0.25);
+	pMain->Draw();
+	pRatio->Draw();
+	
+	if (isTest) totalNRange = 1;
 	for (int i = 0; i< totalNRange ;i++){	
 		// using projection to get 1D hist
 		// draw n2b1
+		pMain->cd();
 		TH1F* h_n2b1_SR = (TH1F*) h_DDB_N2_SR[i]->ProjectionX();
 		TH1F* h_n2b1_CR = (TH1F*) h_DDB_N2_CR[i]->ProjectionX();
-		setDrawOpt(h_n2b1_SR,"","N_{2}^{1}","");
-		h_n2b1_SR->GetXaxis()->SetTitleSize(0.04);
-		h_n2b1_SR->GetXaxis()->SetTitleOffset(1.1);
+		TH1F* h_ratio = (TH1F*)h_n2b1_SR->Clone("h_ratio");
+
+		setDrawOpt(h_n2b1_SR,"","","Events / bin");
+		h_n2b1_SR->GetYaxis()->SetTitleOffset(1.5);
+		h_n2b1_SR->GetXaxis()->SetLabelSize(0.);
 		h_n2b1_SR->Draw();
 		h_n2b1_CR->SetLineColor(kRed);
 		h_n2b1_CR->Draw("SAME");
 		
-		TLegend legend1(0.1,0.7,0.4,0.9);
+		TLegend legend1(0.15,0.7,0.45,0.9);
 		legend1.SetFillColor(0);
 		legend1.SetFillStyle(0);
 		legend1.SetLineWidth(0);
-		legend1.AddEntry(h_n2b1_SR,"mindphi > 0.4");
-		legend1.AddEntry(h_n2b1_CR,"mindphi < 0.4");
+		legend1.AddEntry(h_n2b1_SR,"mindphi > 0.4(SR)");
+		legend1.AddEntry(h_n2b1_CR,"mindphi < 0.4(CR)");
 		legend1.Draw("SAME");
-		c->SaveAs(Form("compare_n2b1_%i.png",i) );
+		
+		pRatio->cd();
+		h_ratio->Reset("ICESM");
+		h_ratio->Divide(h_n2b1_CR, h_n2b1_SR);
+		setDrawOpt(h_ratio,"","N_{2}^{1}","CR / SR");
+		h_ratio->GetXaxis()->SetTitleOffset(3.0);
+		h_ratio->GetYaxis()->SetTitleOffset(1.5);
+		h_ratio->Draw();
+		
+		c->SaveAs(Form("compare_MC_n2b1_%i.png",i) );
+		if(isTest) c->SaveAs("test.png");
 		// draw ddb
+		pMain->cd();
 		TH1F* h_DDB_SR = (TH1F*) h_DDB_N2_SR[i]->ProjectionY();
 		TH1F* h_DDB_CR = (TH1F*) h_DDB_N2_CR[i]->ProjectionY();
-		setDrawOpt(h_DDB_SR,"","DDB","");
+		setDrawOpt(h_DDB_SR,"","","Events / bin");
+		h_DDB_SR->GetYaxis()->SetTitleOffset(1.5);
+		h_DDB_SR->GetXaxis()->SetLabelSize(0.);
 		h_DDB_SR->Draw();
 		h_DDB_CR->SetLineColor(kRed);
 		h_DDB_CR->Draw("SAME");
@@ -193,10 +228,21 @@ void runCode(vector<float> pars){
 		legend2.SetFillColor(0);
 		legend2.SetFillStyle(0);
 		legend2.SetLineWidth(0);
-		legend2.AddEntry(h_DDB_SR,"mindphi > 0.4");
-		legend2.AddEntry(h_DDB_CR,"mindphi < 0.4");
+		legend2.AddEntry(h_DDB_SR,"mindphi > 0.4(SR)");
+		legend2.AddEntry(h_DDB_CR,"mindphi < 0.4(CR)");
 		legend2.Draw("SAME");
-		c->SaveAs(Form("compare_DDB_%i.png",i) );
+		
+		pRatio->cd();
+		h_ratio = (TH1F*) h_DDB_SR->Clone("h_ratio");
+		h_ratio->Reset("ICESM");
+		h_ratio->Divide(h_DDB_CR, h_DDB_SR);
+		setDrawOpt(h_ratio,"","DDB","CR / SR");
+		h_ratio->GetXaxis()->SetTitleOffset(3.0);
+		h_ratio->GetYaxis()->SetTitleOffset(1.5);
+		h_ratio->Draw();
+		
+		c->SaveAs(Form("compare_MC_DDB_%i.png",i) );
+		
 	}
 	
 }
