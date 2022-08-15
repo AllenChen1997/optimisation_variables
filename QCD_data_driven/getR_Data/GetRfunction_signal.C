@@ -302,7 +302,7 @@ void GetRfunction_signal(string inputfile, string outfile, bool isTest = false){
 			}// end loop of fj
 			
 			//6. ak4Jet
-			vector<TLorentzVector> ak4_eta_3p0_pt_20; 
+			vector<TLorentzVector> ak4_eta_3p0_pt_30; 
 			for (int ijet = 0; ijet < *THINnJet; ijet++){
 				TLorentzVector tmpTL;
 				tmpTL.SetPxPyPzE(THINjetPx[ijet],THINjetPy[ijet],THINjetPz[ijet],THINjetEnergy[ijet]);
@@ -332,13 +332,13 @@ void GetRfunction_signal(string inputfile, string outfile, bool isTest = false){
 				}
 				if (! noMu) continue;
 				// collect ak4 jet pass pt, eta cut. for getting delta phi 
-				ak4_eta_3p0_pt_20.push_back(tmpTL);
+				ak4_eta_3p0_pt_30.push_back(tmpTL);
 			}
 
 			
-			sort(ak4_eta_3p0_pt_20.begin(), ak4_eta_3p0_pt_20.end(), pt_greater );
+			sort(ak4_eta_3p0_pt_30.begin(), ak4_eta_3p0_pt_30.end(), pt_greater );
 			float offline_HT = 0;
-			for (auto x : ak4_eta_3p0_pt_20) {
+			for (auto x : ak4_eta_3p0_pt_30) {
 				offline_HT += x.Pt();
 			}
 			// select the certian range of HT regions -> find using trigger path -> check trigger result
@@ -389,7 +389,7 @@ void GetRfunction_signal(string inputfile, string outfile, bool isTest = false){
 			//7.2 apply mindphi && addtional ak4 jet test(<=2)
 			int nExtraAk4 = 0;
 			mindphi = 999;
-			for (auto x : ak4_eta_3p0_pt_20){
+			for (auto x : ak4_eta_3p0_pt_30){
 				// additional ak4_jet 
 				if (passFatJ.size() == 1){
 					float dr = x.DeltaR(passFatJ[0]);

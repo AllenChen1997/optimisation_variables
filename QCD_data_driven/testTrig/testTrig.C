@@ -87,20 +87,20 @@ void testTrig(string inputFile, string outfile){
 			if(*nVtx<1)continue;
 
 			//1. ak4Jet
-			vector<TLorentzVector> ak4_eta_3p0_pt_20; 
+			vector<TLorentzVector> ak4_eta_3p0_pt_30; 
 			for (int ijet = 0; ijet < *THINnJet; ijet++){
 				TLorentzVector tmpTL;
 				tmpTL.SetPxPyPzE(THINjetPx[ijet],THINjetPy[ijet],THINjetPz[ijet],THINjetEnergy[ijet]);
 				float absjetEta = TMath::Abs(tmpTL.Eta() );
 				float jetPt = tmpTL.Pt();
 				if (absjetEta >= 3.0) continue;
-				if (jetPt <= 20) continue;
+				if (jetPt <= 30) continue;
 				// collect ak4 jet pass pt, eta cut. for getting offline HT = MET + ak4J or = ak4J only
-				ak4_eta_3p0_pt_20.push_back(tmpTL);
+				ak4_eta_3p0_pt_30.push_back(tmpTL);
 			}
-			// actually this part can combine into the for loop above, but I keep vector ak4_eta_3p0_pt_20 for probabily others usage.
+			// actually this part can combine into the for loop above, but I keep vector ak4_eta_3p0_pt_30 for probabily others usage.
 			HT_noMET = 0;
-			for (auto x : ak4_eta_3p0_pt_20){ 
+			for (auto x : ak4_eta_3p0_pt_30){ 
 				HT_noMET += x.Pt();
 			}
 			HT_MET = HT_noMET + *METPT;
