@@ -35,7 +35,7 @@ void combine_plots_corrPlot_profileVer(string inputf1 = default_input1, string i
 	hpx1->SetLineColor(kRed);
 	hpx1->Draw();
 	hpx2->Draw("SAME");
-	TLegend legend(0.8,0.8,1.0,1.0);
+	TLegend legend(0.7,0.7,0.9,0.9);
 	legend.SetFillColor(0);
 	legend.SetFillStyle(0);
 	legend.SetLineWidth(0);
@@ -46,6 +46,6 @@ void combine_plots_corrPlot_profileVer(string inputf1 = default_input1, string i
 	// TGaxis* axis1 = new TGaxis(0,0,0.5,0,0.0,0.5,20,"");
 	// axis1->Draw("SAME");
 	
-	c->SaveAs("combine_MC_Data_DDB_N2B1_corr_profile.png");
+	c->SaveAs(Form("combine_MC_Data_DDB_N2B1_corr_profile_%i.png",lookingHTRegion) );
 }
 

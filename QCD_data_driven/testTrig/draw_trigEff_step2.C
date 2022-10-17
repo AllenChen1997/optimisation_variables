@@ -43,6 +43,7 @@ void draw_trigEff_step2(string inputlist="list_draw_step2.txt",bool withLegend =
 			myFile = TFile::Open(ifile.data(),"READONLY");
 			TH1F* htmp = (TH1F*) myFile->Get(histlist[i].data() );
 			htmp->SetLineColor(colorN);
+			htmp->GetYaxis()->SetRangeUser(0,1.2);
 			setDrawOpt(htmp,"","HT","");
 			c->cd();
 			htmp->Draw("SAME");

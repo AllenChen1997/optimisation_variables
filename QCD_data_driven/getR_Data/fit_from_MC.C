@@ -19,10 +19,15 @@ template<typename T>
 void setDrawOpt(T& h,string title, string xTitle, string yTitle){
 	h->SetTitle(title.c_str());
 	h->SetTitleSize(0.07);
-	h->GetXaxis()->SetLabelSize(0.05);
-	h->GetXaxis()->SetTitleSize(0.05);
-	h->GetYaxis()->SetLabelSize(0.05);
-	h->GetYaxis()->SetTitleSize(0.05);
+	h->GetXaxis()->SetLabelFont(53);
+	h->GetXaxis()->SetLabelSize(16);
+	h->GetXaxis()->SetTitleFont(53);
+	h->GetXaxis()->SetTitleSize(16);
+	
+	h->GetYaxis()->SetLabelFont(53);
+	h->GetYaxis()->SetLabelSize(16);
+	h->GetYaxis()->SetTitleFont(53);
+	h->GetYaxis()->SetTitleSize(16);
 	h->SetXTitle(xTitle.c_str());
 	h->SetYTitle(yTitle.c_str());
 }
@@ -65,13 +70,19 @@ void fit_from_MC(string inputfile, int ChoosedHTRegion = LookingRegion){
 	setDrawOpt(h_DDB_N2_l,"","N2B1","DDB");
 	TH2F* h_DDB_N2_s = (TH2F*) h_DDB_N2_l->Clone("h_DDB_N2_s");
 
-	TH1F* h_DDB_l = new TH1F("h_DDB_l","",nDDB,minDDB,maxDDB);
-	setDrawOpt(h_DDB_l,"","DDB","");
-	TH1F* h_DDB_s = (TH1F*) h_DDB_l->Clone("h_DDB_s");
-	TH1F* h_N2_l = new TH1F("h_N2_l","",nN2,minN2,maxN2);
-	setDrawOpt(h_N2_l,"","N2B1","");
+	TH1F* h_DDB_l = new TH1F("h_DDB_l","",nDDB,minDDB,maxDDB); // used in closure test plot (met<200)
+	setDrawOpt(h_DDB_l,"","","Events / bin");
+	TH1F* h_DDB_s = (TH1F*) h_DDB_l->Clone("h_DDB_s"); 
+	TH1F* h_N2_l = new TH1F("h_N2_l","",nN2,minN2,maxN2); // used in closure test plot (met<200)
+	setDrawOpt(h_N2_l,"","","Events / bin");
 	TH1F* h_N2_s = (TH1F*) h_N2_l->Clone("h_N2_s");
-
+	
+	// call sumw2
+	h_N2_l->Sumw2();
+	h_N2_s->Sumw2();
+	h_DDB_l->Sumw2();
+	h_DDB_s->Sumw2();
+	
 	// counter for test //
 	int nWeightGt1 = 0; // try to see the weight number
 	int nWeightLe1 = 0;
@@ -143,17 +154,21 @@ void fit_from_MC(string inputfile, int ChoosedHTRegion = LookingRegion){
 		if (*whichHT != ChoosedHTRegion) continue;
 		if (*mindphi > 0.4) {
 			h_DDB_N2_l->Fill(N2B1[0],DDB[0]);
-			h_DDB_l->Fill(DDB[0]);
-			h_N2_l->Fill(N2B1[0]);
+			if (*metpT < 200) { 
+				h_DDB_l->Fill(DDB[0]);
+				h_N2_l->Fill(N2B1[0]);
+			}
 		} else {
 			float weight = calculateWeight(params,*metpT);
 			//float weight = 1;
 			if (weight > 1 ) nWeightGt1++;
 			else nWeightLe1++;
 			h_DDB_N2_s->Fill(N2B1[0],DDB[0],weight);
-			h_DDB_s->Fill(DDB[0],weight);
-			h_N2_s->Fill(N2B1[0],weight);
 			h_weight->Fill(weight);
+			if (*metpT < 200){
+				h_DDB_s->Fill(DDB[0],weight);
+				h_N2_s->Fill(N2B1[0],weight);
+			}
 		}
 	}
 
@@ -166,39 +181,92 @@ void fit_from_MC(string inputfile, int ChoosedHTRegion = LookingRegion){
 	h_DDB_N2_l->Write();
 	fout->Close();
 	
+	// plot correlation plot 
 	TCanvas* c1 = new TCanvas("c1","c1");
 	h_DDB_N2_l->Draw("CANDLE");
-	c1->SaveAs("N2B1_DDB_l_withMC.png");
+	c1->SaveAs(Form("N2B1_DDB_l_%i.png",ChoosedHTRegion) );
 	h_DDB_N2_s->SetLineColor(kRed);
 	h_DDB_N2_s->Draw("CANDLE SAME");
-	c1->SaveAs("N2B1_DDB_withMC.png");
+	c1->SaveAs(Form("N2B1_DDB_compare_%i.png",ChoosedHTRegion) );
 	h_DDB_N2_s->Draw("CANDLE");
-	c1->SaveAs("N2B1_DDB_s_withMC.png");
+	c1->SaveAs(Form("N2B1_DDB_s_%i.png",ChoosedHTRegion) );
 	cout << "check h_DDB_N2_s " << endl;
 	cout << "nEvent = " << h_DDB_N2_s->Integral()<< endl;
 	cout << " h_DDB_s: " << h_DDB_s->Integral() << endl;
 	cout << " h_N2_s: " << h_N2_s->Integral() << endl;
 	
-	TLegend legend(0.7,0.7,0.9,0.9);
-	legend.AddEntry(h_DDB_l,"mindphi > 0.4");
-	legend.AddEntry(h_DDB_s,"mindphi < 0.4");
-	
+	// plot DDB closure test plot 
 	TCanvas* c2 = new TCanvas("c2","c2");
-	h_DDB_s->Scale(1.0 / (float)h_DDB_s->Integral() );
+	TPad* pMain = new TPad("pMain","pMain",0.0,0.35,1.0,1.0);
+	pMain->SetRightMargin(0.05);
+	pMain->SetLeftMargin(0.12);
+	pMain->SetBottomMargin(0.02);
+	pMain->SetTopMargin(0.1);
+	
+	TPad* pRatio = new TPad("pRatio","pRatio",0.0,0.0,1.0,0.35);
+	pRatio->SetRightMargin(0.05);
+	pRatio->SetLeftMargin(0.12);
+	pRatio->SetTopMargin(0.02);
+	pRatio->SetBottomMargin(0.25);
+	pMain->Draw();
+	pRatio->Draw();
+	
+	pMain->cd();
+	// h_DDB_s->Scale(1.0 / (float)h_DDB_s->Integral() );
 	h_DDB_s->SetLineColor(kRed);
+	h_DDB_s->GetYaxis()->SetTitleOffset(1.5);
+	h_DDB_s->GetXaxis()->SetLabelSize(0);
 	h_DDB_s->Draw("HISTE");
-	h_DDB_l->Scale(1.0 / (float)h_DDB_l->Integral() );
+	// h_DDB_l->Scale(1.0 / (float)h_DDB_l->Integral() );
 	h_DDB_l->Draw("HISTE SAME");
-	legend.Draw("SAME");
-	c2->SaveAs("DDB_both_withMC.png");
-
-	h_N2_s->Scale(1.0 / (float) h_N2_s->Integral() );
+	
+	TLegend legend1(0.7,0.7,0.9,0.9);
+	legend1.SetFillColor(0);
+	legend1.SetFillStyle(0);
+	legend1.SetLineWidth(0);
+	legend1.AddEntry(h_DDB_l,"mindphi > 0.4(SR)");
+	legend1.AddEntry(h_DDB_s,"mindphi < 0.4(CR)");
+	legend1.Draw("SAME");
+	
+	pRatio->cd();
+	TH1F* h_ratio = (TH1F*) h_DDB_l->Clone("h_ratio");
+	h_ratio->Reset("ICESM");
+	h_ratio->Divide(h_DDB_s,h_DDB_l);
+	setDrawOpt(h_ratio,"","DDB","CR / SR");
+	h_ratio->GetXaxis()->SetTitleOffset(3.0);
+	h_ratio->GetYaxis()->SetTitleOffset(1.5);
+	h_ratio->Draw();
+		
+	c2->SaveAs(Form("DDB_data_closureTest_MET_lt200_%i.png",ChoosedHTRegion) );
+	
+	// draw N2 closure test plot
+	pMain->cd();
+	// h_N2_s->Scale(1.0 / (float) h_N2_s->Integral() );
 	h_N2_s->SetLineColor(kRed);
+	h_N2_s->GetXaxis()->SetLabelSize(0.);
+	h_N2_s->GetYaxis()->SetTitleOffset(1.5);
 	h_N2_s->Draw("HISTE");
-	h_N2_l->Scale(1.0 / (float) h_N2_l->Integral() );
+	// h_N2_l->Scale(1.0 / (float) h_N2_l->Integral() );
 	h_N2_l->Draw("HISTE SAME");
-	legend.Draw("SAME");
-	c2->SaveAs("N2_both_withMC.png");
+
+	TLegend legend2(0.15,0.7,0.45,0.9);
+	legend2.SetFillColor(0);
+	legend2.SetFillStyle(0);
+	legend2.SetLineWidth(0);
+	legend2.AddEntry(h_N2_l,"mindphi > 0.4(SR)");
+	legend2.AddEntry(h_N2_s,"mindphi < 0.4(CR)");
+	legend2.Draw("SAME");
+	
+	pRatio->cd();
+	h_ratio = (TH1F*) h_N2_l->Clone("h_ratio2");
+	h_ratio->Reset("ICESM");
+	h_ratio->Divide(h_N2_s, h_N2_l);
+	setDrawOpt(h_ratio,"","N_{2}^{1}","CR / SR");
+	h_ratio->GetXaxis()->SetTitleOffset(3.0);
+	h_ratio->GetYaxis()->SetTitleOffset(1.5);
+	h_ratio->Draw();
+		
+	c2->SaveAs(Form("N2_data_closureTest_MET_lt200_%i.png",ChoosedHTRegion) );
 	
 	// show the static result
 	cout << "nWeightGt1 = " << nWeightGt1 << endl;

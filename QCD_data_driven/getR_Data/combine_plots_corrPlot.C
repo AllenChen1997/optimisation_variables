@@ -10,7 +10,7 @@
 using namespace std;
 #define lumi 41000
 
-int lookingHTRegion = 4; 
+int lookingHTRegion = 4;
 // from 1 to 5, [300, 500, 600, 750, 1200, 100000]
 string default_input1 = Form("QCD_n2b1_realData.root");
 string default_input2 = "../getR_MC/keep_histo_cutFull.root";
@@ -51,6 +51,6 @@ void combine_plots_corrPlot(string inputf1 = default_input1, string inputh1 = de
 	TGaxis* axis1 = new TGaxis(0,0,0.5,0,0.0,0.5,20,"");
 	axis1->Draw("SAME");
 	
-	c->SaveAs("combine_MC_Data_DDB_N2B1_corr.png");
+	c->SaveAs(Form("combine_MC_Data_DDB_N2B1_corr_%i.png",lookingHTRegion) );
 }
 
